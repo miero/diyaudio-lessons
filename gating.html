@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gating, windows and the 1/T limit — an interactive primer on gated loudspeaker measurement</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1b212b; --line:#2a3340;
+    --text:#dde4ee; --muted:#8d99ab; --accent:#4da3ff; --accent2:#ff9f43;
+    --ok:#3ecf8e; --warn:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:26px;line-height:1.25;margin:0 0 6px}
+  h2{font-size:20px;margin:0 0 8px}
+  h3{font-size:15px;margin:18px 0 6px;color:var(--accent2)}
+  p{margin:8px 0}
+  .sub{color:var(--muted);margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:22px 0}
+  canvas{display:block;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+  .h300{height:320px}.h240{height:250px}.h150{height:150px}
+  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
+  .controls label{color:var(--muted);font-size:13px}
+  button.padbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;font-size:13px;cursor:pointer}
+  button.padbtn.active{background:var(--accent);border-color:var(--accent);color:#08111d;font-weight:600}
+  input[type=range]{width:220px;accent-color:var(--accent);vertical-align:middle}
+  input[type=number]{width:62px;background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    border-radius:6px;padding:3px 6px;font-size:13px}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+  .readout{background:#101720;border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13.5px;color:#c9d4e3}
+  .readout b{color:var(--text)}
+  .readout .ok{color:var(--ok)} .readout .warn{color:var(--warn)} .readout .hl{color:var(--accent2)}
+  .claims{margin:0;padding-left:20px}
+  .claims li{margin:9px 0}
+  .note{color:var(--muted);font-size:13.5px}
+  .myth{border:1px solid #4a3236;border-left:3px solid var(--warn);background:#1c1416;
+    border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .myth .mhead{color:var(--warn);font-weight:700;font-size:12px;letter-spacing:.4px;text-transform:uppercase}
+  .myth .fix{color:#c9d4e3;margin-top:5px}
+  .myth .fix b{color:var(--ok)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--accent)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:760px){.cols{grid-template-columns:1fr}}
+  .cols h3{margin-top:0}
+  ul.tight li,ol.tight li{margin:6px 0}
+  .pill{display:inline-block;background:#22304222;border:1px solid var(--line);border-radius:20px;
+    padding:1px 10px;font-size:12px;color:var(--accent);margin-left:8px;vertical-align:middle}
+  footer{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--line);padding-top:14px}
+  code{background:#101720;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}
+  .qz{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;background:var(--panel2)}
+  .qtext{margin-bottom:8px}
+  .qbtns{display:flex;gap:8px}
+  .qwhy{display:none;margin-top:8px;font-size:13.5px;color:#c9d4e3;border-top:1px dashed var(--line);padding-top:8px}
+  button.qgood{background:#1d4b38;border-color:var(--ok);color:#d2ffe9}
+  button.qbad{background:#4b2326;border-color:var(--warn);color:#ffd7d7}
+  .predict{background:#101720;border:1px dashed var(--accent);border-radius:8px;padding:10px 14px;margin:12px 0}
+  .predict .ptitle{color:var(--accent);font-size:13px;font-weight:600;margin-bottom:8px}
+  .predict .popts{display:flex;gap:8px;flex-wrap:wrap}
+  .predict .pwhy{display:none;margin-top:8px;font-size:13.5px;color:#c9d4e3}
+  .formula{background:#101720;border:1px solid var(--line);border-radius:8px;padding:10px 16px;
+    margin:12px 0;font:16px/1.5 ui-monospace,Consolas,monospace;color:var(--accent2);text-align:center}
+  .dsrow{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid var(--line);
+    border-radius:8px;background:var(--panel2);margin:6px 0;font-size:13.5px;cursor:pointer}
+  .dsrow.off{opacity:0.45}
+  .dsrow input{accent-color:var(--accent)}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
+  .dsrow .pars{color:var(--muted);margin-left:auto;font-size:12.5px;text-align:right;white-space:nowrap}
+  .dslegend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+  .dslegend span{display:inline-flex;align-items:center;gap:5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Gating, windows and the <span style="color:var(--accent)">1/T</span> limit</h1>
+  <p class="sub">An interactive walkthrough of how loudspeaker impulse-response gating really works —
+  why zero-padding is mandatory, why <i>truncation</i> (not FFT bin width) sets the resolution, how
+  windows smear the spectrum, how to tell whether a gate is long enough, and what to do — and what to
+  show — when it isn’t.</p>
+
+  <div class="card">
+    <h2>The claims being demonstrated</h2>
+    <ol class="claims">
+      <li><b>Zero-padding is not a trick that produces artificial data.</b> For an impulse response it
+        reveals <i>all</i> the data available between the FFT bins — it is basically mandatory for
+        getting useful data. <span class="pill">Demo 1</span></li>
+      <li><b>A time record of length T can only contain frequency features limited by 1/T resolution.</b>
+        “Short in time means always smooth in frequency.” Smoothing with a kernel of width 1/T does
+        nothing to a signal that is only T long. <span class="pill">Demo 1 &amp; 3</span></li>
+      <li><b>The only way to know the gate is long enough:</b> watch the (zero-padded) frequency response
+        while increasing the gate length. If it stops changing before the first reflection arrives, the
+        gate is sufficient. <span class="pill">Demo 2</span></li>
+      <li><b>Gating = multiplication with a window in time = convolution with the window’s spectrum in
+        frequency.</b> The window’s main lobe is roughly 1/T wide, so finer details get smeared — the more,
+        the shorter the gate. If the true IR fits inside the gate, gating does (essentially) nothing.
+        <span class="pill">Demo 3</span></li>
+      <li><b>If the gate is too short, show the uncertainty.</b> Instead of a meaningless “dotted line”
+        below 1/T, show how the FR still changes as the gate approaches the available length — the SPL
+        uncertainty over frequency, i.e. every place on the frequency axis not resolved by the data.
+        <span class="pill">Demo 4</span></li>
+      <li><b>Demonstrating a system that happens to decay in 5 ms and declaring 5 ms “fine in general”
+        is backwards.</b> Validity depends on how much data the gate actually throws away. <span class="pill">Demo 2 &amp; 3</span></li>
+    </ol>
+    <p class="note">All signals below are synthetic impulse responses sampled at 48 kHz. Spectra are
+    computed by direct DTFT evaluation — mathematically identical to a zero-padded FFT at arbitrary
+    resolution. Magnitudes are in dB, arbitrary reference, identical within each demo.</p>
+  </div>
+
+  <!-- ================= DEMO 0 ================= -->
+  <div class="card">
+    <h2>Demo 0 — The seesaw: why 1/T is a law, not a limitation</h2>
+    <p>Every result on this page follows from one fact: <b>a signal cannot be simultaneously narrow in time
+    and narrow in frequency.</b> Below is a Gaussian pulse — the unique shape that reaches the tightest
+    possible joint concentration in time and frequency. Drag the slider to squeeze it in time and watch it
+    stretch in frequency. The product of the two widths stays locked to one number. That is a law of
+    mathematics (the uncertainty principle), not a limitation of microphones, rooms or FFTs.</p>
+    <div class="controls">
+      <label>Time width σ<sub>t</sub> <b id="s0v">1.50 ms</b></label>
+      <input type="range" id="s0" min="0.4" max="4" step="0.05" value="1.5">
+    </div>
+    <canvas id="c0t" class="h240"></canvas>
+    <canvas id="c0f" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="r0"></div>
+    <p class="note">Squeeze the pulse in time by a factor of 2 and its spectrum stretches by a factor of 2 —
+    the product σ<sub>t</sub>·σ<sub>f</sub> is invariant (for a Gaussian it is exactly 1/2π, the minimum any
+    signal can reach). A rectangular gate of length T obeys the same rule in its own terms: its spectrum’s
+    main lobe is ≈ 1/T wide. That is the seesaw behind every demo that follows.
+    <b>You can choose time resolution or frequency resolution. You cannot have both.</b></p>
+  </div>
+
+  <!-- ================= BUILDING BLOCKS ================= -->
+  <div class="card">
+    <h2>The building blocks — damped sinusoids</h2>
+    <p><b>Every impulse response on this page — and every real loudspeaker’s — is a sum of damped
+    sinusoids.</b> Why? Every resonance in the system (woofer in its box, port, cabinet panel, breakup
+    modes) behaves like a bell: hit it with the impulse and it <i>rings</i> — oscillating at its own
+    frequency while losing energy. The natural ringing of one resonance is exactly</p>
+    <div class="formula">x(t) = a · e<sup>−t/τ</sup> · cos(2πf₀t + φ)</div>
+    <p>with three parameters: the <b>frequency f₀</b> it rings at, the <b>decay time τ</b> (how long the
+    ringing lasts), and the <b>amplitude a</b> (how strongly the impulse excited it). Mathematically these
+    are the system’s <i>poles</i>: the impulse response of any linear system is the sum of one damped
+    sinusoid per pole. That is also how they are <b>obtained from a measurement</b> (Demo 6): you look at a
+    decaying tail, count its oscillation period → f₀, measure how fast its envelope falls → τ, read its
+    initial height → a. Try it yourself:</p>
+
+    <h3>Part A — one resonance, dissected</h3>
+    <div class="controls">
+      <label>Frequency f₀ <b id="dsAfV">400 Hz</b></label>
+      <input type="range" id="dsAf" min="100" max="2000" step="10" value="400">
+      <label>Decay time τ <b id="dsAtauV">2.0 ms</b></label>
+      <input type="range" id="dsAtau" min="0.3" max="20" step="0.1" value="2">
+    </div>
+    <canvas id="dsAt" class="h240"></canvas>
+    <canvas id="dsAs" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="dsAr"></div>
+    <p class="note">Top: the ringing, with its decaying envelope drawn dashed. One oscillation takes
+    1/f₀; the envelope falls by a factor e every τ. Bottom: the same signal viewed in frequency — one peak
+    at f₀. Drag τ up and watch the peak get <b>narrower and taller</b>: a long-lasting ringing is a
+    frequency detail of width ≈ 1/(πτ) = f₀/Q, where Q = πf₀τ. This is the seesaw of Demo 0 in its purest
+    form — and the reason a long-τ resonance demands a long gate: you must record the ringing until it is
+    gone, or the gate smears this narrow peak into a wide bump (Demo 3).</p>
+
+    <h3>Part B — a whole speaker, one damped sinusoid at a time</h3>
+    <p>Below is the two-way speaker from Demo 1 plus a slow bass resonance like Demo 2’s port. Switch
+    modes on and off and watch the impulse response and the frequency response assemble themselves:</p>
+    <div id="dsModes"></div>
+    <div class="dslegend" id="dsLegend"></div>
+    <canvas id="dsBt" class="h240"></canvas>
+    <canvas id="dsBf" class="h300" style="margin-top:10px"></canvas>
+    <div class="readout" id="dsBr"></div>
+    <p class="note">The bold curve is the coherent sum — note it is <i>not</i> the outline of the thin
+    component curves: damped sinusoids interfere, adding and canceling between peaks. The individual thin
+    curves show what each mode contributes alone. Two things to try: (1) switch the bass resonance off and
+    on — a single long-τ mode is what forces the long gate for the whole measurement; (2) switch everything
+    off except one fast mode and compare with Demo 1 — that is the whole lesson in miniature: short in time
+    ⇒ smooth in frequency. The parameters of these exact modes are what a pole-fitting routine would
+    report when analyzing a measured tail in Demo 6.</p>
+  </div>
+
+  <!-- ================= DEMO 1 ================= -->
+  <div class="card">
+    <h2>Demo 1 — Zero-padding reveals the data, it doesn’t invent it</h2>
+    <p>This IR (a little “2-way speaker”) decays below ≈ −60 dB within <b>5 ms</b>, so a 5 ms gate throws
+    away nothing significant — the true response genuinely continues with zeros. With no padding, a 5 ms
+    record yields FFT bins spaced <code>1/T = 200 Hz</code> apart (shown as dots). Increase the padding:</p>
+    <div class="controls">
+      <label>Zero-padding factor:</label>
+      <span id="padBtns"></span>
+    </div>
+    <div class="predict">
+      <div class="ptitle">Predict before you click 16×: where will the new points land?</div>
+      <div class="popts" id="p1"></div>
+      <div class="pwhy" id="p1why"></div>
+    </div>
+    <canvas id="c1" class="h300"></canvas>
+    <div class="readout" id="r1"></div>
+    <p class="note">Grey curve: the same 5 ms of data evaluated at very high resolution. Every dot — at
+    <i>any</i> padding factor — lands exactly on it. Padding computes <b>true, exact values between the
+    original bins</b>, not an approximation and not new information. The 5 ms record had already fully
+    determined the response at <i>every</i> frequency — including far below the 200 Hz bin spacing.
+    How <i>accurate</i> that response is relative to the real speaker depends only on how much the window
+    altered the IR — completely unrelated to FFT resolution.</p>
+    <div class="myth"><div class="mhead">✗ Myth — “zero-padding is interpolation / fudging, and bin width is the resolution”</div>
+      <div class="fix">Zero-padding computes the <b>exact</b> transform of the data you already have, at
+      points between the bins — it invents nothing. And the bin width is only the sampling spacing; the real
+      resolution is set by the <b>gate length</b> (≈ 1/T). Padding densifies the sampling; it cannot bring
+      back anything the gate threw away.</div></div>
+  </div>
+
+  <!-- ================= DEMO 2 ================= -->
+  <div class="card">
+    <h2>Demo 2 — Is the gate long enough? Grow it and watch the response</h2>
+    <p>This speaker has a long bass/port tail (decay time ≈ 11 ms around 68 Hz) and a floor reflection
+    arriving at <b>14 ms</b>. The gate must stop before the reflection — but does the IR decay enough by
+    then? Move the gate and watch what happens to the low frequencies. Thin grey curves are fixed
+    reference gates (2 / 4 / 8 / 12 ms) for comparison.</p>
+    <div class="controls">
+      <label>Gate length <b id="t2v">5.00 ms</b></label>
+      <input type="range" id="t2" min="1" max="22" step="0.25" value="5">
+      <label>Window:</label>
+      <select id="win2"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select>
+      <label><input type="checkbox" id="ghosts2" checked> show reference gates</label>
+    </div>
+    <canvas id="c2" class="h300"></canvas>
+    <canvas id="c2ir" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="r2"></div>
+    <p class="note"><b>How to read it:</b> the dashed line marks <code>1/T</code>. Below it the response
+    cannot show features narrower than 1/T — and if the curve still <i>moves</i> there when you lengthen
+    the gate, the missing tail mattered. That is the whole test: <b>increase T; when the zero-padded FR
+    stops changing (before the reflection), the gate was long enough.</b> Slide past 14 ms to see what a
+    reflection does: a comb filter appears — the response is no longer free-field at all. The decay of the
+    IR itself can also be “read” in the lower plot, but judging that by eye takes experience; the FR
+    convergence test is objective.</p>
+    <div class="myth"><div class="mhead">✗ Myth — “gating removes reflections for free”</div>
+      <div class="fix">You always pay: cutting the IR at the reflection caps your frequency resolution at
+      ≈ 1/T. Reflections are removed in time, and the bill is charged in low-frequency detail. There is no
+      free lunch — only a trade you get to place.</div></div>
+  </div>
+
+  <!-- ================= DEMO 3 ================= -->
+  <div class="card">
+    <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)</h2>
+    <p>This system contains a high-Q resonance at 1 kHz with a 20 ms decay — in the true response it is a
+    narrow feature only ~15 Hz wide. A gate shorter than the decay multiplies the IR by a window; in
+    frequency that <b>convolves the true spectrum with the window’s spectrum</b>, whose main lobe is
+    ≈ 1/T wide. Fine details get smeared to that width:</p>
+    <div class="controls">
+      <label>Gate length <b id="t3v">8 ms</b></label>
+      <input type="range" id="t3" min="2" max="80" step="1" value="8">
+      <label>Window:</label>
+      <select id="win3"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select>
+    </div>
+    <div class="predict">
+      <div class="ptitle">Predict at the default 8 ms gate: how wide will the ≈ 15 Hz resonance appear in the blue (gated) curve?</div>
+      <div class="popts" id="p3"></div>
+      <div class="pwhy" id="p3why"></div>
+    </div>
+    <canvas id="c3" class="h300"></canvas>
+    <canvas id="c3k" class="h150" style="margin-top:10px"></canvas>
+    <div class="readout" id="r3"></div>
+    <p class="note">The lower plot is the “smearing kernel” — magnitude of the window’s own spectrum
+    (linear frequency axis): a sinc-like main lobe with first zero at <code>1/T</code>, and −13 dB
+    sidelobes for the rectangular gate. Convolution with it is exactly what gating does to the true
+    spectrum. Grow the gate well past the 20 ms decay time and watch the smeared bump sharpen back into
+    the true narrow resonance. <b>The FFT bin width is irrelevant throughout</b> - all spectra are computed at
+    arbitrarily fine (zero-padded) resolution; the only error is the truncation. A half-Hann fade pushes
+    the sidelobes down (less leakage) but widens the main lobe to ≈ 2/T — more smearing, less ringing.
+    And note: if the gate fully contains everything significant in the IR, multiplication by 1 changes
+    nothing — that is the <i>definition</i> of the correct gate length; there is no other general rule.</p>
+    <div class="myth"><div class="mhead">✗ Myth — “if the curve looks smooth, it’s resolved”</div>
+      <div class="fix">Smoothness can be <b>caused by smearing</b>, not by the absence of detail. A too-short
+      gate blurs sharp resonances and notches into gentle bumps. The only objective test is convergence:
+      grow the gate and check whether the curve still changes (Demo 2).</div></div>
+  </div>
+
+  <!-- ================= DEMO 4 ================= -->
+  <div class="card">
+    <h2>Demo 4 — When the gate <i>is</i> too short: show the uncertainty, not a dotted line</h2>
+    <p>Back to the slowly-decaying speaker of Demo 2. The reflection at 14 ms caps the usable gate. The
+    family of responses obtained as the gate grows from 1 ms toward that limit is shown in grey; the
+    orange band is their point-by-point min/max — <b>how much the answer still moves</b>. The bold green
+    curve is the longest available gate (the honest best estimate), the dashed white curve is the true
+    anechoic response:</p>
+    <div class="controls">
+      <label>Longest usable gate <b id="t4v">13.00 ms</b></label>
+      <input type="range" id="t4" min="6" max="13.75" step="0.25" value="13">
+    </div>
+    <canvas id="c4" class="h300"></canvas>
+    <div class="readout" id="r4"></div>
+    <p class="note">Left of the dashed line (<code>1/T</code> of the longest gate) the band is wide:
+    those frequencies are <b>not resolved</b> by the available impulse data — different amounts of the
+    still-decaying tail produce legitimately different answers there. Drawing a thin curve (or a fake
+    “dotted extrapolation”) below 1/T pretends to know what is going on; drawing <i>nothing</i> hides the
+    best estimate we actually have. The band shows both at once: the green curve is the
+    window-smoothed truth the data supports, and the band width is the remaining uncertainty. Notice how
+    the band collapses wherever the response has converged — “short in time means smooth in frequency”,
+    so convergence arrives first at high frequencies — while at low frequencies the family of curves is
+    still heading toward the dashed true response. The band shows how far the answer can still move;
+    shrinking it needs a longer gate — or a different method.</p>
+    <div class="myth"><div class="mhead">✗ Myth — “the dotted line below 1/T is the real response”</div>
+      <div class="fix">Below 1/T the data simply cannot resolve features — the curve there is a
+      window-smoothed estimate carrying a real uncertainty. Reporting it as a confident thin line (or a fake
+      extrapolation) hides that. Show the estimate <b>plus the band</b>, or switch to a method that reaches
+      those frequencies.</div></div>
+  </div>
+
+  <!-- ================= DEMO 5 ================= -->
+  <div class="card">
+    <h2>Demo 5 — Pick your poison: the window design space</h2>
+    <p>Every gate shape faces the same trade: a <b>narrow smoothing kernel</b> (fine resolution, little
+    smearing) versus <b>little ringing</b> (no sidelobes smeared beside sharp features). No window beats the
+    trade — the seesaw of Demo 0 again — you only choose where to sit on the curve. All windows below have
+    the same length T and start at the impulse; the rectangular one is the “pure truncation” of Demo 3:</p>
+    <div class="controls">
+      <label>Kaiser taper β <b id="s5v">6.0</b></label>
+      <input type="range" id="s5" min="3" max="12" step="0.1" value="6">
+      <span class="note" style="font-size:12.5px">drag to move the blue point along the trade-off curve</span>
+    </div>
+    <canvas id="c5w" class="h150"></canvas>
+    <canvas id="c5s" class="h240" style="margin-top:10px"></canvas>
+    <canvas id="c5t" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="r5"></div>
+    <p class="note" style="margin-top:4px">Colors: <span style="color:#ff6b6b">rectangular</span> ·
+    <span style="color:#ff9f43">half-Hann fade</span> · <span style="color:#3ecf8e">Kaiser β=4</span> ·
+    <span style="color:#b48cff">Kaiser β=8</span> · <span style="color:#8a95a6">exponential (adds artificial
+    damping — biases the response, used deliberately e.g. on noisy tails)</span> ·
+    <span style="color:#4da3ff">your Kaiser (slider)</span></p>
+    <p class="note">Middle plot: each window’s own spectrum, normalized (frequency axis in units of f·T, so
+    the rectangular first zero sits at 1 = 1/T). Bottom plot: the design space — the smoothing width of the
+    kernel (its −6 dB width) against its ringing (first sidelobe). Points pinned to the bottom edge have
+    <i>no</i> sidelobe: their skirt decays monotonically, so nothing rings beside a smeared feature — at the
+    price of a wider kernel. Drag the slider and watch the blue Kaiser point slide along the frontier from
+    “rectangular-like” (narrow, ringing) to “heavily tapered” (wide, no ringing). The exponential window sits
+    far to the right: no ringing, but the widest kernel of the lot — and it adds artificial damping, biasing
+    the response. Rule of thumb: rectangular when the IR is already decayed (nothing to ring), a moderate
+    taper when a strong tail is being cut.</p>
+  </div>
+
+  <!-- ================= EXCITATION ================= -->
+  <div class="card">
+    <h2>How the impulse response is obtained in the first place</h2>
+    <p>Gating acts on the recovered IR, whatever produced it — and none of the excitation choices changes the
+    1/T limit. But they differ in SNR and in how they fail:</p>
+    <table>
+      <tr><th>Excitation</th><th>Strengths</th><th>Weaknesses</th><th>Typical use</th></tr>
+      <tr><td><b>Impulse</b> (starter pistol, balloon, dirac-like click)</td>
+        <td>Trivial setup, no deconvolution</td>
+        <td>Very low energy → poor SNR; high peak drives speakers into nonlinearity</td>
+        <td>Quick checks, education</td></tr>
+      <tr><td><b>MLS</b> (maximum-length sequence)</td>
+        <td>Fast, averages noise well, flat spectrum, no strict sync needed</td>
+        <td>Nonlinearities create spurious IR peaks; period must exceed the whole IR (time-aliasing); clock drift sensitive</td>
+        <td>Legacy tools, fast factory testing</td></tr>
+      <tr><td><b>Log swept sine</b> (chirp, deconvolved with its inverse)</td>
+        <td>Best energy per measurement time → excellent SNR; harmonic distortion arrives at separate times (Farina) and can be excluded</td>
+        <td>Needs sync/trimming; longer measurement; inverse-filter care at the band edges</td>
+        <td>The modern default (REW, ARTA, …)</td></tr>
+    </table>
+    <p class="note">Practical consequence: with a sweep you can spend seconds injecting energy exactly where
+    the IR is weak (the late, low-level tail that gating wants to keep), which is why sweep-based gated
+    measurements push the usable gate longest. Whatever the excitation, the chain is identical afterwards:
+    deconvolve → IR → gate → zero-pad → interpret with Demos 1–5.</p>
+  </div>
+
+  <!-- ================= DEMO 6 ================= -->
+  <div class="card">
+    <h2>Demo 6 — Extend the gate: fit the decaying tail as a damped sinusoid</h2>
+    <p>When the IR has not decayed by the time the reflection arrives, the standard advice is that you
+    need a non-gating method. One such method follows directly from the building blocks above: the late tail is
+    (approximately) a <b>damped sinusoid</b>, so <i>measure</i> its three parameters from the part you can
+    see, then synthesize what would have come after the reflection. Two steps — first obtain the model,
+    then use it:</p>
+
+    <h3>Step 1 — obtaining the model: fit the visible tail</h3>
+    <p>Pick a window on the tail of the room measurement (the blue IR below; the reflection arrives at
+    14 ms). The tempting shortcut — reading f₀ off the window’s spectral peak — fails here: a short window
+    of a slow tail has no clear peak (see the grey dot below). So the fitter does a proper little
+    <b>pole fit</b>: it sweeps <b>frequency and decay time together</b>, least-squares fitting
+    <code>e<sup>−t/τ</sup>(A·cos 2πft + B·sin 2πft)</code> to the window, and keeps the (f₀, τ) pair that
+    explains it best — frequency, decay time, amplitude and phase, all from one fit:</p>
+    <div class="controls">
+      <label>Fit window start <b id="d6fsV">3.0 ms</b></label>
+      <input type="range" id="d6fs" min="0.5" max="11" step="0.25" value="3">
+      <label>Fit window end <b id="d6feV">13.0 ms</b></label>
+      <input type="range" id="d6fe" min="4" max="13.5" step="0.25" value="13">
+    </div>
+    <canvas id="d6t" class="h240"></canvas>
+    <canvas id="d6s" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="d6fit"></div>
+    <p class="note">Top: the measured room IR (the 14 ms reflection is the big spike); shaded, the fit
+    window; in color, the fitted damped sinusoid — when the window is well chosen it hugs the data almost
+    exactly (the true values for this synthetic speaker are f₀ = 68 Hz, τ = 11 ms). Bottom: the spectrum of
+    the fit window — note there is <i>no clean peak</i>; the grey dot is where a naive peak-pick would land,
+    the red line is the fitted f₀. <b>Try dragging the window start left toward 0:</b>
+    the direct sound and the fast midrange modes get included, the fit R² collapses, and the fitted τ drifts
+    — this is the whole art of pole fitting in one slider. A fit window must contain <i>one clean decay and
+    nothing else</i>.</p>
+
+    <h3>Step 2 — using the model: extend the gate past the reflection</h3>
+    <p>The fitted f₀, τ, A, B now define the tail completely. Splice it in where the fit window ends and run
+    it on past the 14 ms reflection — the effective gate is now as long as you dare synthesize:</p>
+    <div class="controls">
+      <label>Effective gate <b id="t6v">40 ms</b></label>
+      <input type="range" id="t6" min="15" max="120" step="1" value="40">
+    </div>
+    <canvas id="c6" class="h300"></canvas>
+    <div class="readout" id="r6"></div>
+    <p class="note">Grey: real data only, gated where the fit window ends — the 68 Hz port bump is
+    unresolved. Blue: real data plus the tail <i>synthesized from the fitted parameters</i>, out to the
+    effective gate. With a good fit window the blue curve converges onto the dashed true response as the
+    gate grows; with a bad fit window (drag Step 1’s start left) it converges to something confidently
+    wrong. <b>That is the catch, made visible:</b> real tails are only approximately sums of damped
+    sinusoids, and a bad fit injects plausible-looking but wrong bass — which is why this is the advanced
+    option, not the default. What the model tries to reconstruct in software, ground-plane and nearfield
+    measurements give you for free.</p>
+  </div>
+
+  <!-- ================= PLANNER ================= -->
+  <div class="card">
+    <h2>Measurement Planner — can this be measured, in this room?</h2>
+    <p>The skill the demos build up to: <b>before measuring, predict what a gated measurement can
+    resolve.</b> Two numbers collide. The gate the <i>speaker</i> needs — its slowest resonance must decay
+    to the noise floor, and a resonance at f₀ with Q has an amplitude decay time τ = Q/(πf₀), so reaching
+    −60 dB takes ≈ 6.9·τ ≈ 2.2·Q/f₀. And the gate the <i>room</i> allows — the first reflection caps it,
+    leaving a resolution floor of 1/T. Set both sides and read the verdict:</p>
+    <div class="controls">
+      <label>Resonance f₀ <b id="pf0v">100 Hz</b></label>
+      <input type="range" id="pf0" min="20" max="400" step="5" value="100">
+      <label>Q <b id="pQv">10</b></label>
+      <input type="range" id="pQ" min="1" max="30" step="0.5" value="10">
+      <label>Decay target</label>
+      <select id="pdB"><option value="40">−40 dB</option><option value="50">−50 dB</option><option value="60" selected>−60 dB</option></select>
+    </div>
+    <div class="controls">
+      <label>First reflection arrives at <b id="ptRefv">10.0 ms</b></label>
+      <input type="range" id="ptRefl" min="2" max="50" step="0.5" value="10">
+      <span class="note" style="font-size:12.5px">floor-bounce helper: distance d
+      <input type="number" id="pd" value="2" min="0.3" max="10" step="0.1"> m,
+      speaker height <input type="number" id="phs" value="1" min="0.05" max="3" step="0.05"> m,
+      mic height <input type="number" id="phm" value="1" min="0.05" max="3" step="0.05"> m
+      → <b id="pbVal"></b> <button id="pbApply" class="padbtn">use</button></span>
+    </div>
+    <canvas id="cp1" class="h240"></canvas>
+    <canvas id="cp2" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="rp"></div>
+    <p class="note">Top plot: the resonance’s decay envelope in dB against the two time limits — the
+    reflection (red) and the gate needed to reach the decay target (green). Bottom plot: the maximum Q
+    still fully resolvable at each frequency, given this room’s reflection delay, with your resonance
+    marked. Try the defaults — a Q&nbsp;=&nbsp;10 resonance at 100&nbsp;Hz in a room whose first reflection
+    arrives at 10&nbsp;ms — and watch the verdict explain why the bass of a ported bookshelf is measured
+    nearfield rather than gated.</p>
+  </div>
+
+  <!-- ================= DISCUSSION ================= -->
+  <div class="card">
+    <h2>Strong &amp; weak points of gated measurement</h2>
+    <div class="cols">
+      <div>
+        <h3>Strengths</h3>
+        <ul class="tight">
+          <li><b>Quasi-anechoic data in an ordinary room.</b> No anechoic chamber needed — reflections are
+            excluded in time, so any reasonably quiet room works.</li>
+          <li><b>Zero-padding is free and exact.</b> The smooth curve between bins is the true transform of
+            the gated data, not interpolation — you get usable resolution down to any frequency.</li>
+          <li><b>Built-in validity check.</b> Growing the gate and watching for convergence (Demo 2) tells
+            you objectively which part of the curve to trust.</li>
+          <li><b>Nothing is lost when the IR is short.</b> For systems that genuinely decay within the
+            gate, the gated spectrum <i>is</i> the spectrum — “multiplication by 1 does nothing”.</li>
+          <li><b>Excitation-agnostic.</b> Works with impulse, MLS or swept-sine (after deconvolution) —
+            gating happens on the recovered IR.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Weaknesses</h3>
+        <ul class="tight">
+          <li><b>Hard time–frequency trade-off.</b> Resolution ≈ 1/T (rectangular) or ≈ 2/T (faded
+            window). A 10 ms gate cannot resolve anything narrower than ~100 Hz — bass extension is
+            fundamentally capped by the room size (reflection delay).</li>
+          <li><b>Slow decays break it.</b> Bass-reflex alignments, high-Q resonances and small rooms
+            (early reflections) conspire: the tail is still large when the reflection arrives, so the low
+            end is never “measured”, only bounded (Demo 4).</li>
+          <li><b>Truncation distorts fine detail.</b> Sharp resonances/notches are broadened and their
+            height/depth misjudged (Demo 3); rectangular gates add −13 dB sidelobe leakage.</li>
+          <li><b>Noise creeps in with long gates.</b> The late IR is low-level; lengthening the gate
+            admits room noise and drift.</li>
+          <li><b>Results are window-dependent.</b> Comparisons between tools require the same gate length
+            and window type.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Comparison with alternative approaches</h3>
+    <table>
+      <tr><th>Method</th><th>Bass extension</th><th>Reflection handling</th><th>Typical limitations</th></tr>
+      <tr>
+        <td><b>Gated in-room</b> (impulse/MLS/sweep, this page)</td>
+        <td>Limited: f<sub>min</sub> ≈ 1/T, T &lt; first reflection (typically 100–300 Hz in small rooms)</td>
+        <td>Removed in time by truncating before they arrive</td>
+        <td>1/T smearing; needs decayed IR before reflection; SNR of late tail</td>
+      </tr>
+      <tr>
+        <td><b>Ground plane</b> (speaker &amp; mic on the ground, outdoors)</td>
+        <td>Excellent — the full undamaged IR is usable; no low-frequency gate limit</td>
+        <td>The single ground reflection adds coherently (doubles pressure, +6 dB) instead of truncating it</td>
+        <td>Needs large open space; half-space loading; ground-bounce combing limits the upper end</td>
+      </tr>
+      <tr>
+        <td><b>Nearfield + splice</b> (driver/port measured at mm distances)</td>
+        <td>Excellent — nearfield pressure follows cone velocity, practically anechoic at low frequencies</td>
+        <td>Reflections negligible due to proximity; spliced to gated far-field data above ~200–400 Hz</td>
+        <td>Valid only below baffle-diffraction region; needs radiating-area correction; multi-way summing is fiddly</td>
+      </tr>
+      <tr>
+        <td><b>Anechoic chamber</b></td>
+        <td>Down to the chamber’s low-frequency limit (absorber size, typically 80–200 Hz)</td>
+        <td>Absorbed — no gating needed, full-length IR available</td>
+        <td>Chamber cost/size; low-F limit; still a windowed environment above it</td>
+      </tr>
+      <tr>
+        <td><b>In-room steady state / minimum-phase + EQ</b></td>
+        <td>Full-band by construction — never attempts anechoic data</td>
+        <td>Not removed; accepted and equalized (careful above Schroeder frequency)</td>
+        <td>Includes room modes; not a loudspeaker property; position-dependent</td>
+      </tr>
+      <tr>
+        <td><b>Advanced / model-based</b> (pole fitting, reflection-by-geometry removal, mic arrays)</td>
+        <td>Can extend below 1/T by <i>extrapolating</i> the decaying tail as damped sinusoids</td>
+        <td>Separated by model or spatial filtering instead of brute truncation</td>
+        <td>Assumption-heavy; rarely in consumer tools; the model-based tail extension of Demo 6</td>
+      </tr>
+    </table>
+    <p class="note">In practice the classic solution is a <b>splice</b>: nearfield for the bass, gated
+    far-field for mids/highs — each method used exactly where its window does no harm.</p>
+  </div>
+
+  <!-- ================= TAKEAWAYS ================= -->
+  <div class="card">
+    <h2>Takeaways</h2>
+    <ul class="tight">
+      <li><b>Zero-pad always.</b> It costs nothing and is the only way to see the data the record already
+        contains. Result accuracy is set by the window, never by FFT bin width.</li>
+      <li><b>Verify the gate by convergence,</b> not by faith: grow T, watch the FR, stop when it stops
+        moving — before the first reflection.</li>
+      <li><b>A gate is “correct” exactly when it contains all significant IR energy.</b> There is no
+        universal good gate length; proving it on one fast-decaying speaker proves nothing for others.</li>
+      <li><b>Below 1/T you have a smoothed truth plus an uncertainty,</b> not a dotted void. Report both:
+        the best-estimate curve and the band of remaining change (Demo 4).</li>
+      <li><b>When the gate can’t be long enough, change the method</b> (ground plane, nearfield splice,
+        chamber, model-based extension) rather than trusting a too-short gate.</li>
+    </ul>
+  </div>
+
+  <!-- ================= QUIZ ================= -->
+  <div class="card">
+    <h2>Check your understanding</h2>
+    <p>Eight claims — commit to true or false <i>before</i> reading the feedback. <b id="qzscore" class="hl" style="color:var(--accent)"></b></p>
+    <div id="quiz"></div>
+    <div class="controls"><button id="qzreset" class="padbtn">Reset quiz</button></div>
+  </div>
+
+  <!-- ================= ADVANCED ================= -->
+  <div class="card">
+    <h2>Where to go next (advanced)</h2>
+    <p>This page stops at the standard advice, but the same ideas keep going. If you want the ceiling:</p>
+    <ul class="tight">
+      <li><b>Frequency-dependent gating / wavelets.</b> The 1/T limit says low frequencies <i>need</i> longer
+        gates. Wavelet and variable-window methods give long effective gates at low f and short ones at high
+        f, instead of one global T — at the cost of a frequency-dependent, harder-to-interpret window.</li>
+      <li><b>Minimum phase &amp; excess phase.</b> A magnitude response only fixes the phase of its
+        minimum-phase part; real drivers carry excess phase (delay, crossovers, reflections). Gating changes
+        phase too. Understanding this tells you when an equalizer can and cannot fix what you measured.</li>
+      <li><b>Cumulative spectral decay / waterfalls.</b> Instead of one gate, plot energy vs frequency vs
+        time. You <i>see</i> the decaying tail and pick the gate with your eyes — the IR-plot
+        reading that usually “takes some experience” to do by eye.</li>
+      <li><b>Pole fitting in depth.</b> Demo 6’s modeled tail, done rigorously: fit complex poles to the
+        late decay (Prony / matrix-pencil / ESPRIT), subtract or extend them. Powerful, assumption-heavy,
+        and sensitive to noise and to how many poles you keep.</li>
+      <li><b>Spatial methods.</b> Separate reflections by geometry or with microphone arrays / spatial
+        filtering instead of brute time truncation — trading the time gate for an aperture.</li>
+    </ul>
+  </div>
+
+  <footer>Synthetic educational demo — fs = 48 kHz, spectra via direct DTFT (≡ zero-padded FFT).
+  Signals: Demo 0 — Gaussian pulse; Demo 1 — fast-decaying modal sum (5 ms);
+  Demo 2/4 — modal mid/high + 68 Hz port resonance (τ ≈ 11 ms) + reflection at 14 ms;
+  Demo 3 — modal background + 1 kHz resonance, Q ≈ 63, τ = 20 ms;
+  Demo 5 — rectangular / half-Hann / Kaiser / exponential gates, all T = 10 ms;
+  Demo 6 — the reflection-free version of the Demo 2 speaker (tail modeled past the reflection).</footer>
+</div>
+<script src="gating.js"></script>
+</body>
+</html>
