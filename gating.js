@@ -1585,13 +1585,13 @@ function drawPlannerQ(kNeed, Tallow, f0, Q) {
   const { ctx: c, w, h } = sizeCanvas(els.cp2);
   c.clearRect(0, 0, w, h);
   const ml = 44, mr = 14, mt = 10, mb = 26;
-  const fmin = 20, fmax = 2000, qmax = 30;
+  const fmin = 20, fmax = 4000, qmax = 30;
   const X = f => ml + Math.log10(f / fmin) / Math.log10(fmax / fmin) * (w - ml - mr);
   const Y = q => mt + (1 - q / qmax) * (h - mt - mb);
   c.font = '11px system-ui'; c.lineWidth = 1;
   c.textAlign = 'center'; c.textBaseline = 'top';
-  const fT = [20, 50, 100, 200, 500, 1000, 2000];
-  const fL = ['20', '50', '100', '200', '500', '1k', '2k'];
+  const fT = [20, 50, 100, 200, 500, 1000, 2000, 4000];
+  const fL = ['20', '50', '100', '200', '500', '1k', '2k', '4k'];
   for (let i = 0; i < fT.length; i++) {
     const x = X(fT[i]);
     c.strokeStyle = '#232c38';
