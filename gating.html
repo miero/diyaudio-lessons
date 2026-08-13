@@ -80,22 +80,30 @@
 <body>
 <div class="wrap">
 
-  <h1>Gating, windows and the <span style="color:var(--accent)">1/T</span> limit</h1>
-  <p class="sub">An interactive walkthrough of how loudspeaker impulse-response gating really works —
-  why zero-padding is mandatory, why <i>truncation</i> (not FFT bin width) sets the resolution, how
-  windows smear the spectrum, how to tell whether a gate is long enough, and what to do — and what to
-  show — when it isn’t. The red <b>1/T markers and gate edges are draggable directly on the plots</b> —
-  grab one and pull.</p>
+  <h1>Gating, windows and the <span style="color:var(--accent)">1/T</span> limit in loudspeaker measurement</h1>
+  <p class="sub">To measure a loudspeaker in an ordinary room, you cut its impulse response off before
+  the first reflection arrives — that cut is <b>gating</b>, and it buys reflection-free data at the price
+  of bass detail. This page is an interactive walkthrough of what that price really is: why zero-padding
+  is mandatory, why <i>truncation</i> (not FFT bin width) sets the resolution, how windows smear the
+  spectrum, how to tell whether a gate is long enough, and what to show when it isn’t.</p>
+  <p class="sub">The red <b>1/T markers and gate edges are draggable directly on the plots</b> — grab one
+  and pull.</p>
 
   <div class="card">
     <h2>The claims being demonstrated</h2>
+    <p>Two objects to keep apart throughout this page: <b>the device’s frequency response</b> — the true
+    response of the DUT, what you want — and <b>the DFT of the gated record</b> — what you actually
+    compute, and what every curve on this page plots. The two coincide only when the gate contains all
+    significant IR energy (multiplication by 1 changes nothing). Otherwise the computed curve is the
+    device’s response convolved with the window’s kernel — a smoothed copy, inaccurate at every
+    frequency, not just the low ones.</p>
     <ol class="claims">
       <li><b>Zero-padding is not a trick that produces artificial data.</b> For an impulse response it
         reveals <i>all</i> the data available between the FFT bins — it is basically mandatory for
         getting useful data. <span class="pill">Demo 1</span></li>
-      <li><b>A time record of length T can only contain frequency features limited by 1/T resolution.</b>
-        “Short in time means always smooth in frequency.” Smoothing with a kernel of width 1/T does
-        nothing to a signal that is only T long. <span class="pill">Demo 1 &amp; 3</span></li>
+      <li><b>Short in time means smooth in frequency.</b> A record of length T cannot show spectral
+        detail finer than ≈ 1/T — and smoothing a T-long signal with a 1/T-wide kernel changes nothing
+        about it. <span class="pill">Demo 0, 1 &amp; 3</span></li>
       <li><b>The only way to know the gate is long enough:</b> watch the (zero-padded) frequency response
         while increasing the gate length. If it stops changing before the first reflection arrives, the
         gate is sufficient. <span class="pill">Demo 2</span></li>
@@ -112,12 +120,6 @@
       <li><b>Demonstrating a system that happens to decay in 5 ms and declaring 5 ms “fine in general”
         is backwards.</b> Validity depends on how much data the gate actually throws away. <span class="pill">Demo 2 &amp; 3</span></li>
     </ol>
-    <p>Two objects to keep apart throughout this page: <b>the device’s frequency response</b> — the true
-    response of the DUT, what you want — and <b>the DFT of the gated record</b> — what you actually
-    compute, and what every curve on this page plots. The two coincide only when the gate contains all
-    significant IR energy (multiplication by 1 changes nothing). Otherwise the computed curve is the
-    device’s response convolved with the window’s kernel — a smoothed copy, inaccurate at every
-    frequency, not just the low ones.</p>
     <p class="note">All signals below are synthetic impulse responses sampled at 48 kHz. Spectra are
     computed by direct DTFT evaluation — mathematically identical to a zero-padded FFT at arbitrary
     resolution. Magnitudes are in dB, arbitrary reference, identical within each demo.</p>
