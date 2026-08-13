@@ -103,7 +103,8 @@
         frequency.</b> By the convolution theorem, the window’s main lobe is roughly 1/T wide, so finer
         details get smeared — the more, the shorter the gate; resonances lose Q, and details narrower
         than 1/T can vanish entirely. If the true IR fits inside the gate, gating does (essentially)
-        nothing. <span class="pill">Demo 3</span></li>
+        nothing — only then is the plotted curve the device’s response; otherwise it is a smoothed copy
+        of it, everywhere. <span class="pill">Demo 3</span></li>
       <li><b>If the gate is too short, show the uncertainty.</b> Instead of a meaningless “dotted line”
         below 1/T, show how the FR still changes as the gate approaches the available length — the SPL
         uncertainty over frequency, i.e. every place on the frequency axis not resolved by the data.
@@ -111,6 +112,12 @@
       <li><b>Demonstrating a system that happens to decay in 5 ms and declaring 5 ms “fine in general”
         is backwards.</b> Validity depends on how much data the gate actually throws away. <span class="pill">Demo 2 &amp; 3</span></li>
     </ol>
+    <p>Two objects to keep apart throughout this page: <b>the device’s frequency response</b> — the true
+    response of the DUT, what you want — and <b>the DFT of the gated record</b> — what you actually
+    compute, and what every curve on this page plots. The two coincide only when the gate contains all
+    significant IR energy (multiplication by 1 changes nothing). Otherwise the computed curve is the
+    device’s response convolved with the window’s kernel — a smoothed copy, inaccurate at every
+    frequency, not just the low ones.</p>
     <p class="note">All signals below are synthetic impulse responses sampled at 48 kHz. Spectra are
     computed by direct DTFT evaluation — mathematically identical to a zero-padded FFT at arbitrary
     resolution. Magnitudes are in dB, arbitrary reference, identical within each demo.</p>
@@ -219,7 +226,9 @@
     <p class="note">The 5 ms record had already fully
     determined the response at <i>every</i> frequency — including far below the 200 Hz bin spacing.
     How <i>accurate</i> that response is relative to the real speaker depends only on how much the window
-    altered the IR — completely unrelated to FFT resolution.</p>
+    altered the IR — completely unrelated to FFT resolution. Here the window altered nothing (the IR had
+    decayed to zero inside the gate), so the spectrum of the gated data <i>is</i> the device’s response —
+    the happy special case; Demo 3 is what happens when the gate throws data away.</p>
     <div class="myth"><div class="mhead">✗ Myth — “zero-padding is interpolation / fudging, and bin width is the resolution”</div>
       <div class="fix">Zero-padding computes the <b>exact</b> transform of the data you already have, at
       points between the bins — it invents nothing. And the bin width is only the sampling spacing; the real
@@ -256,7 +265,7 @@
     <p class="note"><b>How to read it:</b> the dashed line marks <code>1/T</code> — not an FFT bin
     spacing. The FFT resolution for the gate length implies nothing here (everything is computed at
     arbitrarily fine resolution); 1/T is a property of the <i>gate</i> itself, the width of the smoothing
-    kernel it applies. Below it the response
+    kernel it applies. Below it the spectrum of the gated data
     cannot show features narrower than 1/T — and if the curve still <i>moves</i> there when you lengthen
     the gate, the missing tail mattered.</p>
     <p class="note">That is the whole test: <b>increase T; when the zero-padded FR
@@ -312,7 +321,7 @@
     <canvas id="c3k" class="h240" style="margin-top:10px"></canvas>
     <div class="dslegend">
       <span><span class="swatch" style="background:#9aa5b5"></span> true response</span>
-      <span><span class="swatch" style="background:#4da3ff"></span> gated</span>
+      <span><span class="swatch" style="background:#4da3ff"></span> spectrum of the gated data</span>
       <span><span class="swatch" style="background:#e05c5c"></span> 1/T · red bracket = kernel width</span>
       <span><span class="swatch" style="background:#ff9f43"></span> kernel |W(f)|</span>
       <span><span class="swatch" style="background:#3ecf8e"></span> f₀ · green bracket = resonance width</span>
@@ -323,7 +332,7 @@
     sidelobes for the rectangular gate. Convolution with it is exactly what gating does to the true
     spectrum. The brackets at its top compare the two widths that decide everything: the kernel’s width
     (red, ≈ 1/T) against the resonance’s own width (green, 1/(πτ)) — when the red bracket swallows the
-    green one, the feature is gone.</p></p>
+    green one, the feature is gone.</p>
     <p class="note">Note what kind of operation this is: a smoothing of <b>fixed width in Hz</b> (≈ 1/T) —
     unlike the octave-based smoothing of ordinary FR plots — applied equally across the whole range.
     It lowers the Q of resonances and can erase any detail finer than the kernel outright. So once the
