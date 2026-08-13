@@ -267,6 +267,13 @@
     <p>This system contains a tunable high-Q resonance — by default at 1 kHz with a 20 ms decay
     (Q ≈ 63), a feature only ~15 Hz wide in the true response. Longer τ means higher Q, a longer decay
     <i>and</i> a narrower feature — exactly the kind of detail a short gate destroys.</p>
+    <p>The resonance rings as <code>a·e<sup>−t/τ</sup>·cos 2πf₀t</code>: τ is the e-folding decay time and
+    the kick <b>a is fixed</b> whatever τ you pick — so a longer τ simply rings longer, and its spectral
+    peak grows <i>narrower and taller</i> (height ∝ τ, i.e. gain ∝ Q), exactly as in Part A. About its
+    strength: this IR is the direct sound (relative strength 1.2) plus four fast background modes
+    (0.90 / 0.55 / 0.35 / 0.15), and the resonance is excited at <b>a = 0.08</b> — roughly eleven times
+    weaker than the strongest background mode. A weak, slow detail sitting on a much stronger, fast
+    background: precisely the situation gating has to deal with.</p>
     <p>A gate shorter than the decay multiplies the IR, sample by sample,
     by the window — and by the <b>convolution theorem</b>, multiplying in time is exactly the same as
     <b>convolving the true spectrum with the window’s spectrum</b> in frequency. That convolution
