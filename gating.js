@@ -1522,7 +1522,7 @@ function drawDemo6() {
    tau = Q/(pi f0); reaching -D dB takes tau * D/8.686. The room caps the
    gate at the first-reflection delay -> resolution floor 1/T.           */
 
-const stateP = { f0: 100, Q: 10, dB: 60, tRefl: 10 };
+const stateP = { f0: 1000, Q: 3, dB: 60, tRefl: 7 };
 const DB_PER_TAU = 20 / Math.log(10); // 8.686 dB of amplitude decay per tau
 
 function drawPlannerDecay(tau, Tneed, Tallow, dBtarget) {
