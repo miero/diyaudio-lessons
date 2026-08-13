@@ -1869,7 +1869,7 @@ function updateTauRow() {
   const Q = Math.PI * state3.f0 * state3.tau * 1e-3;
   const width = 1000 / (Math.PI * state3.tau);
   els.tau3v.textContent = `${state3.tau.toFixed(1)} ms \u00b7 Q = ${Q < 10 ? Q.toFixed(1) : Q.toFixed(0)}` +
-    ` \u00b7 ${width >= 100 ? width.toFixed(0) : width.toFixed(1)} Hz`;
+    ` \u00b7 width 1/(\u03c0\u03c4) = ${width >= 100 ? width.toFixed(0) : width.toFixed(1)} Hz`;
 }
 els.f3.addEventListener('input', () => {
   state3.f0 = parseFloat(els.f3.value);
