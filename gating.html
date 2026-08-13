@@ -131,7 +131,8 @@
     <div class="readout" id="r0"></div>
     <p class="note">Squeeze the pulse in time by a factor of 2 and its spectrum stretches by a factor of 2 —
     the product σ<sub>t</sub>·σ<sub>f</sub> is invariant (for a Gaussian it is exactly 1/2π, the minimum any
-    signal can reach). A rectangular gate of length T obeys the same rule in its own terms: its spectrum’s
+    signal can reach).</p>
+    <p class="note">A rectangular gate of length T obeys the same rule in its own terms: its spectrum’s
     main lobe is ≈ 1/T wide. That is the seesaw behind every demo that follows.
     <b>You can choose time resolution or frequency resolution. You cannot have both.</b></p>
   </div>
@@ -147,7 +148,8 @@
     <p>with three parameters: the <b>frequency f₀</b> it rings at, the <b>decay time τ</b> (how long the
     ringing lasts), and the <b>amplitude a</b> (how strongly the impulse excited it). Mathematically these
     are the system’s <i>poles</i>: the impulse response of any linear system is the sum of one damped
-    sinusoid per pole. That is also how they are <b>obtained from a measurement</b> (Demo 6): you look at a
+    sinusoid per pole.</p>
+    <p>That is also how they are <b>obtained from a measurement</b> (Demo 6): you look at a
     decaying tail, count its oscillation period → f₀, measure how fast its envelope falls → τ, read its
     initial height → a. Try it yourself:</p>
 
@@ -162,7 +164,8 @@
     <canvas id="dsAs" class="h240" style="margin-top:10px"></canvas>
     <div class="readout" id="dsAr"></div>
     <p class="note">Top: the ringing, with its decaying envelope drawn dashed. One oscillation takes
-    1/f₀; the envelope falls by a factor e every τ. Bottom: the same signal viewed in frequency — one peak
+    1/f₀; the envelope falls by a factor e every τ.</p>
+    <p class="note">Bottom: the same signal viewed in frequency — one peak
     at f₀. Drag τ up and watch the peak get <b>narrower and taller</b>: a long-lasting ringing is a
     frequency detail of width ≈ 1/(πτ) = f₀/Q, where Q = πf₀τ. This is the seesaw of Demo 0 in its purest
     form — and the reason a long-τ resonance demands a long gate: you must record the ringing until it is
@@ -178,10 +181,12 @@
     <div class="readout" id="dsBr"></div>
     <p class="note">The bold curve is the coherent sum — note it is <i>not</i> the outline of the thin
     component curves: damped sinusoids interfere, adding and canceling between peaks. The individual thin
-    curves show what each mode contributes alone. Two things to try: (1) switch the bass resonance off and
+    curves show what each mode contributes alone.</p>
+    <p class="note">Two things to try: (1) switch the bass resonance off and
     on — a single long-τ mode is what forces the long gate for the whole measurement; (2) switch everything
     off except one fast mode and compare with Demo 1 — that is the whole lesson in miniature: short in time
-    ⇒ smooth in frequency. The parameters of these exact modes are what a pole-fitting routine would
+    ⇒ smooth in frequency.</p>
+    <p class="note">The parameters of these exact modes are what a pole-fitting routine would
     report when analyzing a measured tail in Demo 6.</p>
   </div>
 
@@ -204,7 +209,8 @@
     <div class="readout" id="r1"></div>
     <p class="note">Grey curve: the same 5 ms of data evaluated at very high resolution. Every dot — at
     <i>any</i> padding factor — lands exactly on it. Padding computes <b>true, exact values between the
-    original bins</b>, not an approximation and not new information. The 5 ms record had already fully
+    original bins</b>, not an approximation and not new information.</p>
+    <p class="note">The 5 ms record had already fully
     determined the response at <i>every</i> frequency — including far below the 200 Hz bin spacing.
     How <i>accurate</i> that response is relative to the real speaker depends only on how much the window
     altered the IR — completely unrelated to FFT resolution.</p>
@@ -237,10 +243,12 @@
     arbitrarily fine resolution); 1/T is a property of the <i>gate</i> itself, the width of the smoothing
     kernel it applies. Below it the response
     cannot show features narrower than 1/T — and if the curve still <i>moves</i> there when you lengthen
-    the gate, the missing tail mattered. That is the whole test: <b>increase T; when the zero-padded FR
+    the gate, the missing tail mattered.</p>
+    <p class="note">That is the whole test: <b>increase T; when the zero-padded FR
     stops changing (before the reflection), the gate was long enough.</b> While it still moves, watch
     <i>how</i> it moves: the curve keeps “focusing”, converging from an initially blurred shape toward
-    something sharper — the signature of an IR that has not finished decaying inside the gate. Slide past 14 ms to see what a
+    something sharper — the signature of an IR that has not finished decaying inside the gate.</p>
+    <p class="note">Slide past 14 ms to see what a
     reflection does: a comb filter appears — the response is no longer free-field at all. The decay of the
     IR itself can also be “read” in the lower plot, but judging that by eye takes experience; the FR
     convergence test is objective. <b>Tip:</b> you can also grab the gate itself — drag the orange
@@ -255,7 +263,8 @@
   <div class="card">
     <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)</h2>
     <p>This system contains a high-Q resonance at 1 kHz with a 20 ms decay — in the true response it is a
-    narrow feature only ~15 Hz wide. A gate shorter than the decay multiplies the IR, sample by sample,
+    narrow feature only ~15 Hz wide.</p>
+    <p>A gate shorter than the decay multiplies the IR, sample by sample,
     by the window — and by the <b>convolution theorem</b>, multiplying in time is exactly the same as
     <b>convolving the true spectrum with the window’s spectrum</b> in frequency. That convolution
     kernel’s main lobe is roughly 1/T wide — <b>exactly how wide depends on the window shape</b>
@@ -278,17 +287,19 @@
     <p class="note">The lower plot is the “smearing kernel” — magnitude of the window’s own spectrum
     (linear frequency axis): a sinc-like main lobe with first zero at <code>1/T</code>, and −13 dB
     sidelobes for the rectangular gate. Convolution with it is exactly what gating does to the true
-    spectrum. Note what kind of operation this is: a smoothing of <b>fixed width in Hz</b> (≈ 1/T) —
+    spectrum.</p>
+    <p class="note">Note what kind of operation this is: a smoothing of <b>fixed width in Hz</b> (≈ 1/T) —
     unlike the octave-based smoothing of ordinary FR plots — applied equally across the whole range.
     It lowers the Q of resonances and can erase any detail finer than the kernel outright. So once the
     IR is truncated, <b>no point of the curve is the accurate true response anymore — not even at the
     exact multiples of 1/T</b> (200, 400, 600 Hz…); the gate altered the entire curve, everywhere.
     The converse is just as true: if the gate cuts off only a little of the tail, the smoothing
-    inflicted is only mild. Grow the gate well past the 20 ms decay time and watch the smeared bump sharpen back into
+    inflicted is only mild.</p>
+    <p class="note">Grow the gate well past the 20 ms decay time and watch the smeared bump sharpen back into
     the true narrow resonance. <b>The FFT bin width is irrelevant throughout</b> - all spectra are computed at
     arbitrarily fine (zero-padded) resolution; the only error is the truncation. A half-Hann fade pushes
-    the sidelobes down (less leakage) but widens the main lobe to ≈ 2/T — more smearing, less ringing.
-    And note: if the gate fully contains everything significant in the IR, multiplication by 1 changes
+    the sidelobes down (less leakage) but widens the main lobe to ≈ 2/T — more smearing, less ringing.</p>
+    <p class="note">And note: if the gate fully contains everything significant in the IR, multiplication by 1 changes
     nothing — that is the <i>definition</i> of the correct gate length; there is no other general rule.
     The red 1/T line above (and the kernel’s first zero below) is draggable.</p>
     <div class="myth"><div class="mhead">✗ Myth — “if the curve looks smooth, it’s resolved”</div>
@@ -313,10 +324,12 @@
     <div class="readout" id="r4"></div>
     <p class="note">Left of the dashed line (<code>1/T</code> of the longest gate) the band is wide:
     those frequencies are <b>not resolved</b> by the available impulse data — different amounts of the
-    still-decaying tail produce legitimately different answers there. Drawing a thin curve (or a fake
+    still-decaying tail produce legitimately different answers there.</p>
+    <p class="note">Drawing a thin curve (or a fake
     “dotted extrapolation”) below 1/T pretends to know what is going on; drawing <i>nothing</i> hides the
     best estimate we actually have. The band shows both at once: the green curve is the
-    window-smoothed truth the data supports, and the band width is the remaining uncertainty. Notice how
+    window-smoothed truth the data supports, and the band width is the remaining uncertainty.</p>
+    <p class="note">Notice how
     the band collapses wherever the response has converged — “short in time means smooth in frequency”,
     so convergence arrives first at high frequencies — while at low frequencies the family of curves is
     still heading toward the dashed true response. The band shows how far the answer can still move;
@@ -352,11 +365,13 @@
     damping — biases the response, used deliberately e.g. on noisy tails)</span> ·
     <span style="color:#4da3ff">your Kaiser (slider)</span></p>
     <p class="note">Middle plot: each window’s own spectrum, normalized (frequency axis in units of f·T, so
-    the rectangular first zero sits at 1 = 1/T). Bottom plot: the design space — the smoothing width of the
+    the rectangular first zero sits at 1 = 1/T).</p>
+    <p class="note">Bottom plot: the design space — the smoothing width of the
     kernel (its −6 dB width) against its ringing (first sidelobe). Points pinned to the bottom edge have
     <i>no</i> sidelobe: their skirt decays monotonically, so nothing rings beside a smeared feature — at the
     price of a wider kernel. Drag the slider and watch the blue Kaiser point slide along the frontier from
-    “rectangular-like” (narrow, ringing) to “heavily tapered” (wide, no ringing). The exponential window sits
+    “rectangular-like” (narrow, ringing) to “heavily tapered” (wide, no ringing).</p>
+    <p class="note">The exponential window sits
     far to the right: no ringing, but the widest kernel of the lot — and it adds artificial damping, biasing
     the response. Rule of thumb: rectangular when the IR is already decayed (nothing to ring), a moderate
     taper when a strong tail is being cut.</p>
@@ -400,7 +415,8 @@
     <h3>Step 1 — obtaining the model: fit the visible tail</h3>
     <p>Pick a window on the tail of the room measurement (the blue IR below; the reflection arrives at
     14 ms). The tempting shortcut — reading f₀ off the window’s spectral peak — fails here: a short window
-    of a slow tail has no clear peak (see the grey dot below). So the fitter does a proper little
+    of a slow tail has no clear peak (see the grey dot below).</p>
+    <p>So the fitter does a proper little
     <b>pole fit</b>: it sweeps <b>frequency and decay time together</b>, least-squares fitting
     <code>e<sup>−t/τ</sup>(A·cos 2πft + B·sin 2πft)</code> to the window, and keeps the (f₀, τ) pair that
     explains it best — frequency, decay time, amplitude and phase, all from one fit:</p>
@@ -415,9 +431,11 @@
     <div class="readout" id="d6fit"></div>
     <p class="note">Top: the measured room IR (the 14 ms reflection is the big spike); shaded, the fit
     window; in color, the fitted damped sinusoid — when the window is well chosen it hugs the data almost
-    exactly (the true values for this synthetic speaker are f₀ = 68 Hz, τ = 11 ms). Bottom: the spectrum of
+    exactly (the true values for this synthetic speaker are f₀ = 68 Hz, τ = 11 ms).</p>
+    <p class="note">Bottom: the spectrum of
     the fit window — note there is <i>no clean peak</i>; the grey dot is where a naive peak-pick would land,
-    the red line is the fitted f₀. <b>Try dragging the window start left toward 0:</b>
+    the red line is the fitted f₀.</p>
+    <p class="note"><b>Try dragging the window start left toward 0:</b>
     the direct sound and the fast midrange modes get included, the fit R² collapses, and the fitted τ drifts
     — this is the whole art of pole fitting in one slider. A fit window must contain <i>one clean decay and
     nothing else</i>.</p>
@@ -433,11 +451,13 @@
     <div class="readout" id="r6"></div>
     <p class="note">Grey: real data only, gated where the fit window ends — the 68 Hz port bump is
     unresolved. Blue: real data plus the tail <i>synthesized from the fitted parameters</i>, out to the
-    effective gate. With a good fit window the blue curve converges onto the dashed true response as the
+    effective gate.</p>
+    <p class="note">With a good fit window the blue curve converges onto the dashed true response as the
     gate grows; with a bad fit window (drag Step 1’s start left) it converges to something confidently
     wrong. <b>That is the catch, made visible:</b> real tails are only approximately sums of damped
     sinusoids, and a bad fit injects plausible-looking but wrong bass — which is why this is the advanced
-    option, not the default. What the model tries to reconstruct in software, ground-plane and nearfield
+    option, not the default.</p>
+    <p class="note">What the model tries to reconstruct in software, ground-plane and nearfield
     measurements give you for free. The red 1/T line is draggable.</p>
   </div>
 
@@ -445,7 +465,8 @@
   <div class="card">
     <h2>Measurement Planner — can this be measured, in this room?</h2>
     <p>The skill the demos build up to: <b>before measuring, predict what a gated measurement can
-    resolve.</b> Two numbers collide. The gate the <i>speaker</i> needs — its slowest resonance must decay
+    resolve.</b> Two numbers collide.</p>
+    <p>The gate the <i>speaker</i> needs — its slowest resonance must decay
     to the noise floor, and a resonance at f₀ with Q has an amplitude decay time τ = Q/(πf₀), so reaching
     −60 dB takes ≈ 6.9·τ ≈ 2.2·Q/f₀. And the gate the <i>room</i> allows — the first reflection caps it,
     leaving a resolution floor of 1/T. Set both sides and read the verdict:</p>
@@ -472,7 +493,8 @@
     <p class="note">Top plot: the resonance’s decay envelope in dB against the two time limits — the
     reflection (red) and the gate needed to reach the decay target (green). Bottom plot: the maximum Q
     still fully resolvable at each frequency, given this room’s reflection delay, with your resonance
-    marked. Try the defaults — a Q&nbsp;=&nbsp;10 resonance at 100&nbsp;Hz in a room whose first reflection
+    marked.</p>
+    <p class="note">Try the defaults — a Q&nbsp;=&nbsp;10 resonance at 100&nbsp;Hz in a room whose first reflection
     arrives at 10&nbsp;ms — and watch the verdict explain why the bass of a ported bookshelf is measured
     nearfield rather than gated.</p>
   </div>
