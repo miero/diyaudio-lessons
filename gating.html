@@ -21,8 +21,10 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:22px 0}
   canvas{display:block;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
   .h300{height:320px}.h240{height:250px}
-  .controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:12px 0}
-  .controls label{color:var(--muted);font-size:13px}
+  .controls{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:12px 0}
+  .controls .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .controls label{color:var(--muted);font-size:13px;min-width:170px}
+  .controls .val{color:var(--text);font-size:13px;font-weight:700}
   button.padbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;
     padding:6px 12px;font-size:13px;cursor:pointer}
   button.padbtn.active{background:var(--accent);border-color:var(--accent);color:#08111d;font-weight:600}
@@ -123,8 +125,8 @@
     stretch in frequency. The product of the two widths stays locked to one number. That is a law of
     mathematics (the uncertainty principle), not a limitation of microphones, rooms or FFTs.</p>
     <div class="controls">
-      <label>Time width σ<sub>t</sub> <b id="s0v">1.50 ms</b></label>
-      <input type="range" id="s0" min="0.4" max="4" step="0.05" value="1.5">
+      <div class="ctl"><label for="s0">Time width σ<sub>t</sub></label>
+        <input type="range" id="s0" min="0.4" max="4" step="0.05" value="1.5"><b class="val" id="s0v">1.50 ms</b></div>
     </div>
     <canvas id="c0t" class="h240"></canvas>
     <canvas id="c0f" class="h240" style="margin-top:10px"></canvas>
@@ -155,10 +157,10 @@
 
     <h3>Part A — one resonance, dissected</h3>
     <div class="controls">
-      <label>Frequency f₀ <b id="dsAfV">400 Hz</b></label>
-      <input type="range" id="dsAf" min="100" max="2000" step="10" value="400">
-      <label>Decay time τ <b id="dsAtauV">2.0 ms</b></label>
-      <input type="range" id="dsAtau" min="0.3" max="20" step="0.1" value="2">
+      <div class="ctl"><label for="dsAf">Frequency f₀</label>
+        <input type="range" id="dsAf" min="100" max="2000" step="10" value="400"><b class="val" id="dsAfV">400 Hz</b></div>
+      <div class="ctl"><label for="dsAtau">Decay time τ</label>
+        <input type="range" id="dsAtau" min="0.3" max="20" step="0.1" value="2"><b class="val" id="dsAtauV">2.0 ms</b></div>
     </div>
     <canvas id="dsAt" class="h240"></canvas>
     <canvas id="dsAs" class="h240" style="margin-top:10px"></canvas>
@@ -197,8 +199,7 @@
     away nothing significant — the true response genuinely continues with zeros. With no padding, a 5 ms
     record yields FFT bins spaced <code>1/T = 200 Hz</code> apart (shown as dots). Increase the padding:</p>
     <div class="controls">
-      <label>Zero-padding factor:</label>
-      <span id="padBtns"></span>
+      <div class="ctl"><label>Zero-padding factor</label><span id="padBtns"></span></div>
     </div>
     <div class="predict">
       <div class="ptitle">Predict before you click 16×: where will the new points land?</div>
@@ -229,11 +230,12 @@
     then? Move the gate and watch what happens to the low frequencies. Thin grey curves are fixed
     reference gates (2 / 4 / 8 / 12 ms) for comparison.</p>
     <div class="controls">
-      <label>Gate length <b id="t2v">5.00 ms</b></label>
-      <input type="range" id="t2" min="1" max="22" step="0.25" value="5">
-      <label>Window:</label>
-      <select id="win2"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select>
-      <label><input type="checkbox" id="ghosts2" checked> show reference gates</label>
+      <div class="ctl"><label for="t2">Gate length</label>
+        <input type="range" id="t2" min="1" max="22" step="0.25" value="5"><b class="val" id="t2v">5.00 ms</b></div>
+      <div class="ctl"><label for="win2">Window</label>
+        <select id="win2"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select></div>
+      <div class="ctl"><label for="ghosts2">Show reference gates</label>
+        <input type="checkbox" id="ghosts2" checked></div>
     </div>
     <canvas id="c2" class="h300"></canvas>
     <canvas id="c2ir" class="h240" style="margin-top:10px"></canvas>
@@ -272,14 +274,14 @@
     (hard truncation ≈ 1/T, faded gate ≈ 2/T; Demo 5 measures each one). Fine details get smeared to
     that width:</p>
     <div class="controls">
-      <label>Resonance f₀ <b id="f3v">1000 Hz</b></label>
-      <input type="range" id="f3" min="100" max="5000" step="10" value="1000">
-      <label>Decay τ <b id="tau3v">20.0 ms</b></label>
-      <input type="range" id="tau3" min="1" max="25" step="0.5" value="20">
-      <label>Gate length <b id="t3v">8 ms</b></label>
-      <input type="range" id="t3" min="2" max="200" step="1" value="8">
-      <label>Window:</label>
-      <select id="win3"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select>
+      <div class="ctl"><label for="f3">Resonance f₀</label>
+        <input type="range" id="f3" min="100" max="5000" step="10" value="1000"><b class="val" id="f3v">1000 Hz</b></div>
+      <div class="ctl"><label for="tau3">Decay τ</label>
+        <input type="range" id="tau3" min="1" max="25" step="0.5" value="20"><b class="val" id="tau3v">20.0 ms</b></div>
+      <div class="ctl"><label for="t3">Gate length</label>
+        <input type="range" id="t3" min="2" max="200" step="1" value="8"><b class="val" id="t3v">8 ms</b></div>
+      <div class="ctl"><label for="win3">Window</label>
+        <select id="win3"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select></div>
     </div>
     <div class="predict">
       <div class="ptitle">Predict at the default 8 ms gate: how wide will the ≈ 15 Hz resonance appear in the blue (gated) curve?</div>
@@ -325,8 +327,8 @@
     curve is the longest available gate (the honest best estimate), the dashed white curve is the true
     anechoic response:</p>
     <div class="controls">
-      <label>Longest usable gate <b id="t4v">13.00 ms</b></label>
-      <input type="range" id="t4" min="6" max="13.75" step="0.25" value="13">
+      <div class="ctl"><label for="t4">Longest usable gate</label>
+        <input type="range" id="t4" min="6" max="13.75" step="0.25" value="13"><b class="val" id="t4v">13.00 ms</b></div>
     </div>
     <canvas id="c4" class="h300"></canvas>
     <div class="readout" id="r4"></div>
@@ -357,11 +359,11 @@
     trade — the seesaw of Demo 0 again — you only choose where to sit on the curve. All windows below have
     the same length T and start at the impulse; the rectangular one is the “pure truncation” of Demo 3:</p>
     <div class="controls">
-      <label>Gate length T <b id="s5tV">10.0 ms</b></label>
-      <input type="range" id="s5t" min="2" max="40" step="0.5" value="10">
-      <label>Kaiser taper β <b id="s5v">6.0</b></label>
-      <input type="range" id="s5" min="3" max="12" step="0.1" value="6">
-      <span class="note" style="font-size:12.5px">drag to move the blue point along the trade-off curve</span>
+      <div class="ctl"><label for="s5t">Gate length T</label>
+        <input type="range" id="s5t" min="2" max="40" step="0.5" value="10"><b class="val" id="s5tV">10.0 ms</b></div>
+      <div class="ctl"><label for="s5">Kaiser taper β</label>
+        <input type="range" id="s5" min="3" max="12" step="0.1" value="6"><b class="val" id="s5v">6.0</b>
+        <span class="note" style="font-size:12.5px">drag to move the blue point along the trade-off curve</span></div>
     </div>
     <canvas id="c5w" class="h240"></canvas>
     <canvas id="c5s" class="h240" style="margin-top:10px"></canvas>
@@ -429,10 +431,10 @@
     <code>e<sup>−t/τ</sup>(A·cos 2πft + B·sin 2πft)</code> to the window, and keeps the (f₀, τ) pair that
     explains it best — frequency, decay time, amplitude and phase, all from one fit:</p>
     <div class="controls">
-      <label>Fit window start <b id="d6fsV">3.0 ms</b></label>
-      <input type="range" id="d6fs" min="0.5" max="11" step="0.25" value="3">
-      <label>Fit window end <b id="d6feV">13.0 ms</b></label>
-      <input type="range" id="d6fe" min="4" max="13.5" step="0.25" value="13">
+      <div class="ctl"><label for="d6fs">Fit window start</label>
+        <input type="range" id="d6fs" min="0.5" max="11" step="0.25" value="3"><b class="val" id="d6fsV">3.0 ms</b></div>
+      <div class="ctl"><label for="d6fe">Fit window end</label>
+        <input type="range" id="d6fe" min="4" max="13.5" step="0.25" value="13"><b class="val" id="d6feV">13.0 ms</b></div>
     </div>
     <canvas id="d6t" class="h240"></canvas>
     <canvas id="d6s" class="h240" style="margin-top:10px"></canvas>
@@ -452,8 +454,8 @@
     <p>The fitted f₀, τ, A, B now define the tail completely. Splice it in where the fit window ends and run
     it on past the 14 ms reflection — the effective gate is now as long as you dare synthesize:</p>
     <div class="controls">
-      <label>Effective gate <b id="t6v">40 ms</b></label>
-      <input type="range" id="t6" min="15" max="120" step="1" value="40">
+      <div class="ctl"><label for="t6">Effective gate</label>
+        <input type="range" id="t6" min="15" max="120" step="1" value="40"><b class="val" id="t6v">40 ms</b></div>
     </div>
     <canvas id="c6" class="h300"></canvas>
     <div class="readout" id="r6"></div>
@@ -479,21 +481,22 @@
     −60 dB takes ≈ 6.9·τ ≈ 2.2·Q/f₀. And the gate the <i>room</i> allows — the first reflection caps it,
     leaving a resolution floor of 1/T. Set both sides and read the verdict:</p>
     <div class="controls">
-      <label>Resonance f₀ <b id="pf0v">1000 Hz</b></label>
-      <input type="range" id="pf0" min="20" max="4000" step="5" value="1000">
-      <label>Q <b id="pQv">3</b></label>
-      <input type="range" id="pQ" min="1" max="30" step="1" value="3">
-      <label>Decay target</label>
-      <select id="pdB"><option value="40">−40 dB</option><option value="50">−50 dB</option><option value="60" selected>−60 dB</option></select>
+      <div class="ctl"><label for="pf0">Resonance f₀</label>
+        <input type="range" id="pf0" min="20" max="4000" step="5" value="1000"><b class="val" id="pf0v">1000 Hz</b></div>
+      <div class="ctl"><label for="pQ">Q</label>
+        <input type="range" id="pQ" min="1" max="30" step="1" value="3"><b class="val" id="pQv">3</b></div>
+      <div class="ctl"><label for="pdB">Decay target</label>
+        <select id="pdB"><option value="40">−40 dB</option><option value="50">−50 dB</option><option value="60" selected>−60 dB</option></select></div>
     </div>
     <div class="controls">
-      <label>First reflection arrives at <b id="ptRefv">7.0 ms</b></label>
-      <input type="range" id="ptRefl" min="2" max="50" step="0.5" value="7">
-      <span class="note" style="font-size:12.5px">floor-bounce helper: distance d
-      <input type="number" id="pd" value="2" min="0.3" max="10" step="0.1"> m,
-      speaker height <input type="number" id="phs" value="2" min="0.05" max="3" step="0.05"> m,
-      mic height <input type="number" id="phm" value="2" min="0.05" max="3" step="0.05"> m
-      → <b id="pbVal"></b> <button id="pbApply" class="padbtn">use</button></span>
+      <div class="ctl"><label for="ptRefl">First reflection arrives at</label>
+        <input type="range" id="ptRefl" min="2" max="50" step="0.5" value="7"><b class="val" id="ptRefv">7.0 ms</b></div>
+      <div class="ctl"><label>Floor-bounce helper</label>
+        <span class="note" style="font-size:12.5px">distance d
+        <input type="number" id="pd" value="2" min="0.3" max="10" step="0.1"> m,
+        speaker height <input type="number" id="phs" value="2" min="0.05" max="3" step="0.05"> m,
+        mic height <input type="number" id="phm" value="2" min="0.05" max="3" step="0.05"> m
+        → <b id="pbVal"></b> <button id="pbApply" class="padbtn">use</button></span></div>
     </div>
     <canvas id="cp1" class="h240"></canvas>
     <canvas id="cp2" class="h240" style="margin-top:10px"></canvas>
