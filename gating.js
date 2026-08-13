@@ -1897,6 +1897,28 @@ window.addEventListener('resize', () => {
 
 drawAll();
 
+// Prevent the browser's default "scroll the focused element into view" from
+// jumping the page when a control is first clicked/focused (e.g. the planner
+// sliders). We snapshot the scroll position on pointerdown and, if that
+// pointer interaction focused a control, restore the snapshot next frame so
+// the page never moves. Keyboard/tab focus is left untouched.
+{
+  let restorePos = null;
+  window.addEventListener('pointerdown', () => {
+    restorePos = { x: window.scrollX, y: window.scrollY };
+  }, true);
+  document.addEventListener('focusin', (e) => {
+    if (!restorePos) return;
+    const pos = restorePos;
+    restorePos = null;
+    const t = e.target;
+    if (t !== document.activeElement) return;
+    requestAnimationFrame(() => {
+      if (document.activeElement === t) window.scrollTo(pos.x, pos.y);
+    });
+  });
+}
+
 // minimal hook for headless tests (no-op in the browser)
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DS_MODES, drawPartB, stateA, drawPartA };
