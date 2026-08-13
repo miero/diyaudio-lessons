@@ -431,19 +431,19 @@
     leaving a resolution floor of 1/T. Set both sides and read the verdict:</p>
     <div class="controls">
       <label>Resonance f₀ <b id="pf0v">100 Hz</b></label>
-      <input type="range" id="pf0" min="20" max="400" step="5" value="100">
-      <label>Q <b id="pQv">10</b></label>
-      <input type="range" id="pQ" min="1" max="30" step="0.5" value="10">
+      <input type="range" id="pf0" min="20" max="4000" step="5" value="1000">
+      <label>Q <b id="pQv">3</b></label>
+      <input type="range" id="pQ" min="1" max="30" step="1" value="3">
       <label>Decay target</label>
       <select id="pdB"><option value="40">−40 dB</option><option value="50">−50 dB</option><option value="60" selected>−60 dB</option></select>
     </div>
     <div class="controls">
-      <label>First reflection arrives at <b id="ptRefv">10.0 ms</b></label>
-      <input type="range" id="ptRefl" min="2" max="50" step="0.5" value="10">
+      <label>First reflection arrives at <b id="ptRefv">7.0 ms</b></label>
+      <input type="range" id="ptRefl" min="2" max="50" step="0.5" value="7">
       <span class="note" style="font-size:12.5px">floor-bounce helper: distance d
       <input type="number" id="pd" value="2" min="0.3" max="10" step="0.1"> m,
-      speaker height <input type="number" id="phs" value="1" min="0.05" max="3" step="0.05"> m,
-      mic height <input type="number" id="phm" value="1" min="0.05" max="3" step="0.05"> m
+      speaker height <input type="number" id="phs" value="2" min="0.05" max="3" step="0.05"> m,
+      mic height <input type="number" id="phm" value="2" min="0.05" max="3" step="0.05"> m
       → <b id="pbVal"></b> <button id="pbApply" class="padbtn">use</button></span>
     </div>
     <canvas id="cp1" class="h240"></canvas>
