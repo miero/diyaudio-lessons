@@ -78,10 +78,20 @@
   .toc{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 4px;font-size:12.5px}
   .toc a{color:var(--accent);text-decoration:none}
   .toc a:hover{text-decoration:underline}
+  .hlink{margin-left:8px;display:inline-block;vertical-align:middle;color:var(--muted);opacity:.45;
+    text-decoration:none;position:relative}
+  h2:hover .hlink,.hlink:focus{opacity:1;color:var(--accent)}
+  .hlink svg{width:15px;height:15px;display:block}
+  .hlink.copied::after{content:'link copied';position:absolute;left:50%;top:130%;transform:translateX(-50%);
+    background:#101720;border:1px solid var(--line);color:var(--ok);font-size:11px;padding:2px 8px;
+    border-radius:6px;white-space:nowrap;z-index:5}
   .card{scroll-margin-top:12px}
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-link" viewBox="0 0 16 16">
+<path fill="currentColor" d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0z"/>
+</symbol></svg>
 <div class="wrap">
 
   <h1>Gating, windows and the <span style="color:var(--accent)">1/T</span> limit in loudspeaker measurement</h1>
@@ -111,7 +121,7 @@
   </nav>
 
   <div class="card" id="claims">
-    <h2>The claims being demonstrated</h2>
+    <h2>The claims being demonstrated<a class="hlink" href="#claims" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>Two objects to keep apart throughout this page: <b>the device’s frequency response</b> — the true
     response of the DUT, what you want — and <b>the DFT of the gated record</b> — what you actually
     compute, and what every curve on this page plots. The two coincide only when the gate contains all
@@ -148,7 +158,7 @@
 
   <!-- ================= DEMO 0 ================= -->
   <div class="card" id="demo-0">
-    <h2>Demo 0 — The seesaw: why 1/T is a law, not a limitation</h2>
+    <h2>Demo 0 — The seesaw: why 1/T is a law, not a limitation<a class="hlink" href="#demo-0" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>Every result on this page follows from one fact: <b>a signal cannot be simultaneously narrow in time
     and narrow in frequency.</b> Below is a Gaussian pulse — the unique shape that reaches the tightest
     possible joint concentration in time and frequency. Drag the slider to squeeze it in time and watch it
@@ -171,7 +181,7 @@
 
   <!-- ================= BUILDING BLOCKS ================= -->
   <div class="card" id="building-blocks">
-    <h2>The building blocks — damped sinusoids</h2>
+    <h2>The building blocks — damped sinusoids<a class="hlink" href="#building-blocks" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p><b>Every impulse response on this page — and every real loudspeaker’s — is a sum of damped
     sinusoids.</b> Why? Every resonance in the system (woofer in its box, port, cabinet panel, breakup
     modes) behaves like a bell: hit it with the impulse and it <i>rings</i> — oscillating at its own
@@ -224,7 +234,7 @@
 
   <!-- ================= DEMO 1 ================= -->
   <div class="card" id="demo-1">
-    <h2>Demo 1 — Zero-padding reveals the data, it doesn’t invent it</h2>
+    <h2>Demo 1 — Zero-padding reveals the data, it doesn’t invent it<a class="hlink" href="#demo-1" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>This IR (a little “2-way speaker”) decays below ≈ −60 dB within <b>5 ms</b>, so a 5 ms gate throws
     away nothing significant — the true response genuinely continues with zeros. With no padding, a 5 ms
     record yields FFT bins spaced <code>1/T = 200 Hz</code> apart (shown as dots). Increase the padding:</p>
@@ -261,7 +271,7 @@
 
   <!-- ================= DEMO 2 ================= -->
   <div class="card" id="demo-2">
-    <h2>Demo 2 — Is the gate long enough? Grow it and watch the response</h2>
+    <h2>Demo 2 — Is the gate long enough? Grow it and watch the response<a class="hlink" href="#demo-2" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>This speaker has a long bass/port tail (decay time ≈ 11 ms around 68 Hz) and a floor reflection
     arriving at <b>14 ms</b>. The gate must stop before the reflection — but does the IR decay enough by
     then? Move the gate and watch what happens to the low frequencies. Thin grey curves are fixed
@@ -308,7 +318,7 @@
 
   <!-- ================= DEMO 3 ================= -->
   <div class="card" id="demo-3">
-    <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)</h2>
+    <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)<a class="hlink" href="#demo-3" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>This system contains a tunable high-Q resonance — by default at 1 kHz with a 20 ms decay
     (Q ≈ 63), a feature only ~15 Hz wide in the true response. Longer τ means higher Q, a longer decay
     <i>and</i> a narrower feature — exactly the kind of detail a short gate destroys.</p>
@@ -379,7 +389,7 @@
 
   <!-- ================= DEMO 4 ================= -->
   <div class="card" id="demo-4">
-    <h2>Demo 4 — When the gate <i>is</i> too short: show the uncertainty, not a dotted line</h2>
+    <h2>Demo 4 — When the gate <i>is</i> too short: show the uncertainty, not a dotted line<a class="hlink" href="#demo-4" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>Back to the slowly-decaying speaker of Demo 2. The reflection at 14 ms caps the usable gate. The
     family of responses obtained as the gate grows from 1 ms toward that limit is shown in grey; the
     orange band is their point-by-point min/max — <b>how much the answer still moves</b>. The bold green
@@ -419,7 +429,7 @@
 
   <!-- ================= DEMO 5 ================= -->
   <div class="card" id="demo-5">
-    <h2>Demo 5 — Pick your poison: the window design space</h2>
+    <h2>Demo 5 — Pick your poison: the window design space<a class="hlink" href="#demo-5" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>Every gate shape faces the same trade: a <b>narrow smoothing kernel</b> (fine resolution, little
     smearing) versus <b>little ringing</b> (no sidelobes smeared beside sharp features). No window beats the
     trade — the seesaw of Demo 0 again — you only choose where to sit on the curve. All windows below have
@@ -455,7 +465,7 @@
 
   <!-- ================= EXCITATION ================= -->
   <div class="card" id="excitation">
-    <h2>How the impulse response is obtained in the first place</h2>
+    <h2>How the impulse response is obtained in the first place<a class="hlink" href="#excitation" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>Gating acts on the recovered IR, whatever produced it — and none of the excitation choices changes the
     1/T limit. But they differ in SNR and in how they fail:</p>
     <table>
@@ -481,7 +491,7 @@
 
   <!-- ================= DEMO 6 ================= -->
   <div class="card" id="demo-6">
-    <h2>Demo 6 — Extend the gate: fit the decaying tail as a damped sinusoid</h2>
+    <h2>Demo 6 — Extend the gate: fit the decaying tail as a damped sinusoid<a class="hlink" href="#demo-6" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>When the IR has not decayed by the time the reflection arrives, the standard advice is that you
     need a non-gating method. One such method follows directly from the building blocks above: the late tail is
     (approximately) a <b>damped sinusoid</b>, so <i>measure</i> its three parameters from the part you can
@@ -552,7 +562,7 @@
 
   <!-- ================= PLANNER ================= -->
   <div class="card" id="planner">
-    <h2>Measurement Planner — can this be measured, in this room?</h2>
+    <h2>Measurement Planner — can this be measured, in this room?<a class="hlink" href="#planner" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>The skill the demos build up to: <b>before measuring, predict what a gated measurement can
     resolve.</b> Two numbers collide.</p>
     <p>The gate the <i>speaker</i> needs — its slowest resonance must decay
@@ -597,7 +607,7 @@
 
   <!-- ================= DISCUSSION ================= -->
   <div class="card" id="discussion">
-    <h2>Strong &amp; weak points of gated measurement</h2>
+    <h2>Strong &amp; weak points of gated measurement<a class="hlink" href="#discussion" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <div class="cols">
       <div>
         <h3>Strengths</h3>
@@ -679,7 +689,7 @@
 
   <!-- ================= TAKEAWAYS ================= -->
   <div class="card" id="takeaways">
-    <h2>Takeaways</h2>
+    <h2>Takeaways<a class="hlink" href="#takeaways" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <ul class="tight">
       <li><b>Zero-pad always.</b> It costs nothing and is the only way to see the data the record already
         contains. Result accuracy is set by the window, never by FFT bin width.</li>
@@ -696,7 +706,7 @@
 
   <!-- ================= QUIZ ================= -->
   <div class="card" id="quiz">
-    <h2>Check your understanding</h2>
+    <h2>Check your understanding<a class="hlink" href="#quiz" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>Nine claims — commit to true or false <i>before</i> reading the feedback. <b id="qzscore" class="hl" style="color:var(--accent)"></b></p>
     <div id="quizbox"></div>
     <div class="controls"><button id="qzreset" class="padbtn">Reset quiz</button></div>
@@ -704,7 +714,7 @@
 
   <!-- ================= ADVANCED ================= -->
   <div class="card" id="advanced">
-    <h2>Where to go next (advanced)</h2>
+    <h2>Where to go next (advanced)<a class="hlink" href="#advanced" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>This page stops at the standard advice, but the same ideas keep going. If you want the ceiling:</p>
     <ul class="tight">
       <li><b>Frequency-dependent gating / wavelets.</b> The 1/T limit says low frequencies <i>need</i> longer
@@ -724,12 +734,9 @@
     </ul>
   </div>
 
-  <footer>Synthetic educational demo — fs = 48 kHz, spectra via direct DTFT (≡ zero-padded FFT).
-  Signals: Demo 0 — Gaussian pulse; Demo 1 — fast-decaying modal sum (5 ms);
-  Demo 2/4 — modal mid/high + 68 Hz port resonance (τ ≈ 11 ms) + reflection at 14 ms;
-  Demo 3 — modal background + tunable resonance (default 1 kHz, τ = 20 ms, Q ≈ 63);
-  Demo 5 — rectangular / half-Hann / Kaiser / exponential gates at one adjustable length T (default 10 ms);
-  Demo 6 — the reflection-free version of the Demo 2 speaker (tail modeled past the reflection).</footer>
+  <footer>Synthetic educational demo — every signal is a sum of damped sinusoids with the parameters
+  stated in each demo (Demo 6 uses the Demo 2 speaker without the 14 ms reflection); spectra by direct
+  DTFT (≡ zero-padded FFT) at fs = 48 kHz. <a href="#">back to top</a></footer>
 </div>
 <script src="gating.js"></script>
 </body>

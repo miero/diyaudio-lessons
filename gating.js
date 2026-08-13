@@ -2050,6 +2050,20 @@ makeDraggable(els.c6, () => plots.d6.X(1000 / state6.T), x => {
     v => { state6.T = v; throttled6(); });
 });
 
+/* ---- chapter link icons: click copies the chapter URL --------------- */
+document.querySelectorAll('a.hlink').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const hash = a.getAttribute('href');
+    const url = location.href.split('#')[0] + hash;
+    try { history.replaceState(null, '', hash); } catch (err) { /* e.g. some file:// setups */ }
+    const show = () => { a.classList.add('copied'); setTimeout(() => a.classList.remove('copied'), 1200); };
+    if (navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(url).then(show, show);
+    else show();
+  });
+});
+
 renderPredict('p1');
 renderPredict('p3');
 renderQuiz();
