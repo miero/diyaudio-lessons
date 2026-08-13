@@ -2016,5 +2016,5 @@ drawAll();
 
 // minimal hook for headless tests (no-op in the browser)
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { DS_MODES, drawPartB, stateA, drawPartA };
+  module.exports = { DS_MODES, drawPartB };
 }
