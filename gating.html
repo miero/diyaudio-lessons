@@ -232,7 +232,10 @@
     <canvas id="c2" class="h300"></canvas>
     <canvas id="c2ir" class="h240" style="margin-top:10px"></canvas>
     <div class="readout" id="r2"></div>
-    <p class="note"><b>How to read it:</b> the dashed line marks <code>1/T</code>. Below it the response
+    <p class="note"><b>How to read it:</b> the dashed line marks <code>1/T</code> — not an FFT bin
+    spacing. The FFT resolution for the gate length implies nothing here (everything is computed at
+    arbitrarily fine resolution); 1/T is a property of the <i>gate</i> itself, the width of the smoothing
+    kernel it applies. Below it the response
     cannot show features narrower than 1/T — and if the curve still <i>moves</i> there when you lengthen
     the gate, the missing tail mattered. That is the whole test: <b>increase T; when the zero-padded FR
     stops changing (before the reflection), the gate was long enough.</b> While it still moves, watch
@@ -254,8 +257,10 @@
     <p>This system contains a high-Q resonance at 1 kHz with a 20 ms decay — in the true response it is a
     narrow feature only ~15 Hz wide. A gate shorter than the decay multiplies the IR, sample by sample,
     by the window — and by the <b>convolution theorem</b>, multiplying in time is exactly the same as
-    <b>convolving the true spectrum with the window’s spectrum</b> in frequency, whose main lobe is
-    ≈ 1/T wide. Fine details get smeared to that width:</p>
+    <b>convolving the true spectrum with the window’s spectrum</b> in frequency. That convolution
+    kernel’s main lobe is roughly 1/T wide — <b>exactly how wide depends on the window shape</b>
+    (hard truncation ≈ 1/T, faded gate ≈ 2/T; Demo 5 measures each one). Fine details get smeared to
+    that width:</p>
     <div class="controls">
       <label>Gate length <b id="t3v">8 ms</b></label>
       <input type="range" id="t3" min="2" max="80" step="1" value="8">
