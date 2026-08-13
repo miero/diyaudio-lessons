@@ -939,10 +939,13 @@ function drawDemo3() {
   drawKernel(T, wt);
   const captured = (1 - Math.exp(-2 * T / TAU3)) * 100;
   const lobe = wt === 'rect' ? 1 : 2;
+  const smear = (lobe * 1000 / T).toFixed(0);
   els.r3.innerHTML =
-    `Gate <b>${T} ms</b> \u2192 smearing width \u2248 ${lobe}/T = <b>${(lobe * 1000 / T).toFixed(0)} Hz</b> ` +
+    `Gate <b>${T} ms</b> \u2192 smearing width \u2248 ${lobe}/T = <b>${smear} Hz</b> ` +
     `(${wt === 'rect' ? 'rectangular main lobe' : 'half-Hann main lobe, \u2248 2\u00d7 the rectangular one'}) \u2014 ` +
     `while the true resonance is only \u2248 15 Hz wide. ` +
+    `That ${smear} Hz blur is <b>the same fixed width everywhere</b> \u2014 at 200 Hz exactly as at 5 kHz: ` +
+    `smoothing in Hz, not in octaves. ` +
     `Share of the resonance's decay energy inside the gate: <b>${captured.toFixed(0)} %</b>. ` +
     (T >= 55
       ? `<span class="ok">The gate now covers most of the decay \u2014 the gated spectrum nearly coincides with the true one. Multiplication by 1 did nothing.</span>`
@@ -1033,6 +1036,11 @@ function drawDemo4() {
   });
   p.curve(G4, truth4(), { color: '#e8edf4', width: 1.3, dash: [7, 5] });
   p.curve(G4, last, { color: '#3ecf8e', width: 2.4 });
+  // the exact multiples of 1/Tmax: no frequency is privileged, not even the "bin" centers
+  const f1 = 1000 / Tmax, kmax = Math.max(1, Math.floor(1600 / f1));
+  const mf = [], md = [];
+  for (let k = 1; k <= kmax; k++) { mf.push(k * f1); md.push(last[nearestIdx(G4, k * f1)]); }
+  p.dots(mf, md, { color: '#3ecf8e', r: 3 });
   p.vline(1000 / Tmax, { color: '#e05c5c', label: `1/Tmax = ${(1000 / Tmax).toFixed(0)} Hz` });
   const wAt = f0 => {
     let bi = 0, bd = Infinity;
@@ -1047,6 +1055,9 @@ function drawDemo4() {
     `<b>${(1000 / Tmax).toFixed(0)} Hz</b> cannot be resolved below that frequency. ` +
     `Remaining uncertainty (band width): <b>${wAt(40).toFixed(1)} dB @ 40 Hz</b>, ` +
     `${wAt(100).toFixed(1)} dB @ 100 Hz, ${wAt(400).toFixed(1)} dB @ 400 Hz. ` +
+    `The green dots mark the exact multiples of 1/Tmax (${(1000 / Tmax).toFixed(0)}, ${(2000 / Tmax).toFixed(0)}, \u2026 Hz) \u2014 ` +
+    `<b>even they are window-smoothed estimates</b>, not exact samples of the true response: near the port resonance the first dot ` +
+    `sits visibly off the dashed truth. Truncation error lands on every frequency, not just \u201cbetween the bins\u201d. ` +
     `<span class="hl">The band is the honest answer below 1/T</span> \u2014 green is the best estimate ` +
     `(window-smoothed truth), white dashed is where the curves are heading (the true response).`;
 }
@@ -1712,6 +1723,8 @@ const QUIZ = [
     why: 'Past the first reflection the response is comb-filtered (slide Demo 2 beyond 14 ms), and long gates also admit noise. Lengthen the gate only while the IR decays and no reflection has arrived.' },
   { q: 'If the IR has fully decayed inside the gate, lengthening the gate further does not change the spectrum.', a: true,
     why: 'The gate multiplies all significant data by 1, and convolving with the window\u2019s spectrum then changes nothing. That is the definition of a sufficient gate \u2014 “short in time means smooth in frequency”, so nothing was lost.' },
+  { q: 'If the gate is too short, at least the values at exact multiples of 1/T (for a 5 ms gate: 200, 400, 600 Hz\u2026) are still accurate.', a: false,
+    why: 'Truncation convolves the whole true spectrum with the window\u2019s kernel \u2014 a fixed-width smoothing applied across the entire range. The resulting error lands on every frequency, including the bin centers; being a multiple of 1/T gives a point no special accuracy.' },
   { q: 'Below 1/T, a gated measurement tells us nothing.', a: false,
     why: 'It still gives the window-smoothed best estimate \u2014 just with an uncertainty attached. Report the curve plus the band of remaining change (Demo 4); a dotted void or a fake extrapolation are both worse.' },
 ];

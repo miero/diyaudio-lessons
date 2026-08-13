@@ -97,9 +97,10 @@
         while increasing the gate length. If it stops changing before the first reflection arrives, the
         gate is sufficient. <span class="pill">Demo 2</span></li>
       <li><b>Gating = multiplication with a window in time = convolution with the window’s spectrum in
-        frequency.</b> The window’s main lobe is roughly 1/T wide, so finer details get smeared — the more,
-        the shorter the gate. If the true IR fits inside the gate, gating does (essentially) nothing.
-        <span class="pill">Demo 3</span></li>
+        frequency.</b> By the convolution theorem, the window’s main lobe is roughly 1/T wide, so finer
+        details get smeared — the more, the shorter the gate; resonances lose Q, and details narrower
+        than 1/T can vanish entirely. If the true IR fits inside the gate, gating does (essentially)
+        nothing. <span class="pill">Demo 3</span></li>
       <li><b>If the gate is too short, show the uncertainty.</b> Instead of a meaningless “dotted line”
         below 1/T, show how the FR still changes as the gate approaches the available length — the SPL
         uncertainty over frequency, i.e. every place on the frequency axis not resolved by the data.
@@ -233,7 +234,9 @@
     <p class="note"><b>How to read it:</b> the dashed line marks <code>1/T</code>. Below it the response
     cannot show features narrower than 1/T — and if the curve still <i>moves</i> there when you lengthen
     the gate, the missing tail mattered. That is the whole test: <b>increase T; when the zero-padded FR
-    stops changing (before the reflection), the gate was long enough.</b> Slide past 14 ms to see what a
+    stops changing (before the reflection), the gate was long enough.</b> While it still moves, watch
+    <i>how</i> it moves: the curve keeps “focusing”, converging from an initially blurred shape toward
+    something sharper — the signature of an IR that has not finished decaying inside the gate. Slide past 14 ms to see what a
     reflection does: a comb filter appears — the response is no longer free-field at all. The decay of the
     IR itself can also be “read” in the lower plot, but judging that by eye takes experience; the FR
     convergence test is objective.</p>
@@ -247,8 +250,9 @@
   <div class="card">
     <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)</h2>
     <p>This system contains a high-Q resonance at 1 kHz with a 20 ms decay — in the true response it is a
-    narrow feature only ~15 Hz wide. A gate shorter than the decay multiplies the IR by a window; in
-    frequency that <b>convolves the true spectrum with the window’s spectrum</b>, whose main lobe is
+    narrow feature only ~15 Hz wide. A gate shorter than the decay multiplies the IR, sample by sample,
+    by the window — and by the <b>convolution theorem</b>, multiplying in time is exactly the same as
+    <b>convolving the true spectrum with the window’s spectrum</b> in frequency, whose main lobe is
     ≈ 1/T wide. Fine details get smeared to that width:</p>
     <div class="controls">
       <label>Gate length <b id="t3v">8 ms</b></label>
@@ -267,7 +271,13 @@
     <p class="note">The lower plot is the “smearing kernel” — magnitude of the window’s own spectrum
     (linear frequency axis): a sinc-like main lobe with first zero at <code>1/T</code>, and −13 dB
     sidelobes for the rectangular gate. Convolution with it is exactly what gating does to the true
-    spectrum. Grow the gate well past the 20 ms decay time and watch the smeared bump sharpen back into
+    spectrum. Note what kind of operation this is: a smoothing of <b>fixed width in Hz</b> (≈ 1/T) —
+    unlike the octave-based smoothing of ordinary FR plots — applied equally across the whole range.
+    It lowers the Q of resonances and can erase any detail finer than the kernel outright. So once the
+    IR is truncated, <b>no point of the curve is the accurate true response anymore — not even at the
+    exact multiples of 1/T</b> (200, 400, 600 Hz…); the gate altered the entire curve, everywhere.
+    The converse is just as true: if the gate cuts off only a little of the tail, the smoothing
+    inflicted is only mild. Grow the gate well past the 20 ms decay time and watch the smeared bump sharpen back into
     the true narrow resonance. <b>The FFT bin width is irrelevant throughout</b> - all spectra are computed at
     arbitrarily fine (zero-padded) resolution; the only error is the truncation. A half-Hann fade pushes
     the sidelobes down (less leakage) but widens the main lobe to ≈ 2/T — more smearing, less ringing.
@@ -559,7 +569,7 @@
   <!-- ================= QUIZ ================= -->
   <div class="card">
     <h2>Check your understanding</h2>
-    <p>Eight claims — commit to true or false <i>before</i> reading the feedback. <b id="qzscore" class="hl" style="color:var(--accent)"></b></p>
+    <p>Nine claims — commit to true or false <i>before</i> reading the feedback. <b id="qzscore" class="hl" style="color:var(--accent)"></b></p>
     <div id="quiz"></div>
     <div class="controls"><button id="qzreset" class="padbtn">Reset quiz</button></div>
   </div>

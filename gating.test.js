@@ -37,6 +37,7 @@ global.document = {
   getElementById(id) { if (!els.has(id)) els.set(id, makeEl(id)); return els.get(id); },
   createElement(tag) { return makeEl('<' + tag + '>'); },
   querySelectorAll() { return []; },
+  addEventListener() {},
 };
 global.window = { devicePixelRatio: 1, addEventListener() {} };
 global.requestAnimationFrame = fn => fn();
