@@ -987,7 +987,9 @@ function drawKernel(Tms, wtype, f0, tauMs) {
   }
   const resW = 1000 / (Math.PI * tauMs);                    // resonance width, Hz
   const lobeW = (wtype === 'rect' ? 1 : 2) * 1000 / Tms;    // kernel width, Hz
-  const fmax = Math.max(4000 / Tms, 1.25 * f0 + 4 * resW), M = 320;
+  // axis: kernel detail up to 4000/T, resonance f0 kept centered;
+  // deliberately independent of tau so dragging tau does not rescale it
+  const fmax = Math.max(4000 / Tms, 2 * f0), M = 320;
   const fr = new Float64Array(M);
   for (let i = 0; i < M; i++) fr[i] = i * fmax / (M - 1);
   const db = spectrumDb(win, fr);
@@ -1862,14 +1864,22 @@ els.t3.addEventListener('input', () => {
   throttled3();
 });
 els.win3.addEventListener('change', () => { state3.win = els.win3.value; drawDemo3(); });
+/* the tau row shows the derived Q and true width - both f0 and tau feed it */
+function updateTauRow() {
+  const Q = Math.PI * state3.f0 * state3.tau * 1e-3;
+  const width = 1000 / (Math.PI * state3.tau);
+  els.tau3v.textContent = `${state3.tau.toFixed(1)} ms \u00b7 Q = ${Q < 10 ? Q.toFixed(1) : Q.toFixed(0)}` +
+    ` \u00b7 ${width >= 100 ? width.toFixed(0) : width.toFixed(1)} Hz`;
+}
 els.f3.addEventListener('input', () => {
   state3.f0 = parseFloat(els.f3.value);
   els.f3v.textContent = state3.f0 + ' Hz';
+  updateTauRow();
   throttled3();
 });
 els.tau3.addEventListener('input', () => {
   state3.tau = parseFloat(els.tau3.value);
-  els.tau3v.textContent = state3.tau.toFixed(1) + ' ms';
+  updateTauRow();
   throttled3();
 });
 els.t4.addEventListener('input', () => {

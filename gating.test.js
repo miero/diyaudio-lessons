@@ -27,7 +27,7 @@ const INPUT_ATTRS = {
   t2: { min: '1', max: '22', step: '0.25' },
   t3: { min: '2', max: '200', step: '1' },
   f3: { min: '100', max: '5000', step: '10' },
-  tau3: { min: '1', max: '25', step: '0.5' },
+  tau3: { min: '0.2', max: '25', step: '0.1' },
   t4: { min: '6', max: '13.75', step: '0.25' },
   t6: { min: '15', max: '120', step: '1' },
   s5t: { min: '2', max: '40', step: '0.5' },
@@ -123,7 +123,7 @@ for (const fv of ['100', '2500', '5000']) {
   tryState(`demo3 f0=${fv} Hz`, () => f3.fire('input'), 'r3');
 }
 f3.value = '1000'; f3.fire('input');
-for (const tv of ['1', '10', '25']) {
+for (const tv of ['0.2', '1', '10', '25']) {
   tau3.value = tv;
   tryState(`demo3 tau=${tv} ms`, () => tau3.fire('input'), 'r3');
 }
