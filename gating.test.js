@@ -16,7 +16,7 @@ function makeCtx() {
 
 const INPUT_DEFAULTS = {
   s0: '1.5', dsAf: '400', dsAtau: '2',
-  t2: '5', win2: 'rect', t3: '8', win3: 'rect', t4: '13', t6: '40',
+  t2: '5', win2: 'rect', t3: '8', win3: 'rect', f3: '1000', tau3: '20', t4: '13', t6: '40',
   s5: '6', s5t: '10',
   d6fs: '3', d6fe: '13',
   pf0: '1000', pQ: '3', pdB: '60', ptRefl: '7',
@@ -25,7 +25,9 @@ const INPUT_DEFAULTS = {
 
 const INPUT_ATTRS = {
   t2: { min: '1', max: '22', step: '0.25' },
-  t3: { min: '2', max: '80', step: '1' },
+  t3: { min: '2', max: '200', step: '1' },
+  f3: { min: '100', max: '5000', step: '10' },
+  tau3: { min: '1', max: '25', step: '0.5' },
   t4: { min: '6', max: '13.75', step: '0.25' },
   t6: { min: '15', max: '120', step: '1' },
   s5t: { min: '2', max: '40', step: '0.5' },
@@ -114,6 +116,20 @@ for (const v of ['2', '20', '55', '80']) {
 win3.value = 'hann';
 tryState('demo3 window=hann', () => win3.fire('change'), 'r3');
 win3.value = 'rect'; win3.fire('change');
+
+const f3 = els.get('f3'), tau3 = els.get('tau3');
+for (const fv of ['100', '2500', '5000']) {
+  f3.value = fv;
+  tryState(`demo3 f0=${fv} Hz`, () => f3.fire('input'), 'r3');
+}
+f3.value = '1000'; f3.fire('input');
+for (const tv of ['1', '10', '25']) {
+  tau3.value = tv;
+  tryState(`demo3 tau=${tv} ms`, () => tau3.fire('input'), 'r3');
+}
+t3.value = '200';
+tryState('demo3 T=200 ms (gate longer than the decay)', () => t3.fire('input'), 'r3');
+tau3.value = '20'; tau3.fire('input');
 
 for (const v of ['6', '10', '13.75']) {
   t4.value = v;

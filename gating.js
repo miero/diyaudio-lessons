@@ -54,14 +54,14 @@ function slowDecayIR(reflection, dur = 0.040) {
   return normalize(x);
 }
 
-/* Demo 3: modal background + one high-Q 1 kHz resonance (tau = 20 ms, Q ~ 63)
-   kept for 160 ms -> the "true" impulse response                              */
-function sharpIR() {
-  const x = new Float64Array(Math.round(0.160 * FS));
+/* Demo 3: modal background + one tunable high-Q resonance (f0, tau) ->
+   the "true" impulse response, long enough to hold ~10 decay times     */
+function sharpIR(f0, tauMs) {
+  const x = new Float64Array(Math.round(Math.max(0.160, 10 * tauMs * 1e-3) * FS));
   addModes(x, [[420, 0.75e-3, 0.90], [1150, 0.60e-3, 0.55],
                [2900, 0.50e-3, 0.35], [6400, 0.35e-3, 0.15]]);
   x[0] += 1.2;
-  const f0 = 1000, tau = 20e-3, a = 0.08;
+  const tau = tauMs * 1e-3, a = 0.08;
   const w = 2 * Math.PI * f0 / FS, d = 1 / (tau * FS);
   for (let n = 0; n < x.length; n++) x[n] += a * Math.exp(-n * d) * Math.cos(w * n);
   return normalize(x);
@@ -322,11 +322,9 @@ const G4 = logFreqs(400);            // demo 4 grid
 
 const irFast = fastDecayIR();        // demo 1 (exactly 5 ms of data)
 const irSlow = slowDecayIR(true);    // demo 2/4 "room measurement" (reflection @ 14 ms)
-const irSharp = sharpIR();           // demo 3 (160 ms "true" IR)
 const truthSlow = slowDecayIR(false, 0.20); // demo 4 "true anechoic" response
 
 const refDb1 = spectrumDb(irFast, GRID);        // demo 1: dense reference, same data
-const trueDbSharp = spectrumDb(irSharp, GRID);  // demo 3: true spectrum (cached)
 let trueDbSlow4 = null;                          // demo 4: true spectrum on G4 (lazy)
 function truth4() { if (!trueDbSlow4) trueDbSlow4 = spectrumDb(truthSlow, G4); return trueDbSlow4; }
 
@@ -338,9 +336,9 @@ for (const id of ['c0t', 'c0f', 'c1', 'c2', 'c2ir', 'c3', 'c3k', 'c4',
                   'dsAt', 'dsAs', 'dsBt', 'dsBf', 'd6t', 'd6s',
                   'r0', 'r1', 'r2', 'r3', 'r4', 'r5', 'r6', 'rp',
                   'dsAr', 'dsBr', 'dsModes', 'dsLegend', 'd6fit',
-                  's0', 's5', 't2', 'win2', 'ghosts2', 't3', 'win3', 't4', 't6',
+                  's0', 's5', 't2', 'win2', 'ghosts2', 't3', 'win3', 'f3', 'tau3', 't4', 't6',
                   'dsAf', 'dsAtau', 'dsAfV', 'dsAtauV', 'd6fs', 'd6fe', 'd6fsV', 'd6feV',
-                  's0v', 's5v', 's5t', 's5tV', 't2v', 't3v', 't4v', 't6v', 'padBtns',
+                  's0v', 's5v', 's5t', 's5tV', 't2v', 't3v', 'f3v', 'tau3v', 't4v', 't6v', 'padBtns',
                   'pf0', 'pQ', 'pdB', 'ptRefl', 'pf0v', 'pQv', 'ptRefv',
                   'pd', 'phs', 'phm', 'pbApply', 'pbVal',
                   'p1', 'p1why', 'p3', 'p3why',
@@ -926,36 +924,58 @@ function drawIRView(Tms, wtype) {
 
 /* ---------------------------- Demo 3 --------------------------------- */
 
-const state3 = { T: parseFloat(els.t3.value), win: els.win3.value || 'rect' };
-const TAU3 = 20; // resonance decay time, ms
+const state3 = { T: parseFloat(els.t3.value), win: els.win3.value || 'rect',
+  f0: parseFloat(els.f3.value), tau: parseFloat(els.tau3.value) };
+
+/* demo 3 "true" IR + its spectrum, cached per (f0, tau) */
+let sharpCache = null;
+function getSharp() {
+  if (!sharpCache || sharpCache.f0 !== state3.f0 || sharpCache.tau !== state3.tau) {
+    const ir = sharpIR(state3.f0, state3.tau);
+    sharpCache = { f0: state3.f0, tau: state3.tau, ir, trueDb: spectrumDb(ir, GRID) };
+  }
+  return sharpCache;
+}
 
 function drawDemo3() {
   const T = state3.T, wt = state3.win;
-  const gd = spectrumDb(gate(irSharp, T, wt), GRID);
-  const [lo, hi] = autoRange([trueDbSharp, gd], { maxSpan: 80 });
+  const sh = getSharp();
+  const gd = spectrumDb(gate(sh.ir, T, wt), GRID);
+  const [lo, hi] = autoRange([sh.trueDb, gd], { maxSpan: 80 });
   const p = plots.d3;
   p.setRange(lo, hi); p.frame();
-  p.curve(GRID, trueDbSharp, { color: '#9aa5b5', width: 1.5 });
+  p.curve(GRID, sh.trueDb, { color: '#9aa5b5', width: 1.5 });
   p.curve(GRID, gd, { color: '#4da3ff', width: 2.2 });
   p.vline(1000 / T, { color: '#e05c5c', label: `1/T = ${(1000 / T).toFixed(0)} Hz` });
-  drawKernel(T, wt);
-  const captured = (1 - Math.exp(-2 * T / TAU3)) * 100;
+  drawKernel(T, wt, state3.f0, state3.tau);
+  const tau = state3.tau;
+  const captured = (1 - Math.exp(-2 * T / tau)) * 100;
   const lobe = wt === 'rect' ? 1 : 2;
-  const smear = (lobe * 1000 / T).toFixed(0);
+  const smear = lobe * 1000 / T;                 // kernel width, Hz
+  const width = 1000 / (Math.PI * tau);          // resonance width 1/(pi tau), Hz
+  const Q = Math.PI * state3.f0 * tau * 1e-3;
+  let verdict;
+  if (captured >= 99.5 && smear <= width) {
+    verdict = `<span class="ok">\u2713 Resolved:</span> the gate covers the decay and the kernel is no wider than the feature \u2014 the gated curve is the true one.`;
+  } else {
+    const parts = [];
+    if (captured < 99.5) parts.push(`the decay needs \u2248 <b>${(3.5 * tau).toFixed(0)} ms</b> (the gate captures ${captured.toFixed(0)} %)`);
+    if (smear > width) parts.push(`the <b>${smear.toFixed(0)} Hz</b> kernel is <b>${(smear / width).toFixed(1)}\u00d7</b> the <b>${width.toFixed(1)} Hz</b> feature`);
+    verdict = `<span class="warn">\u2717 Not resolvable with this gate:</span> ${parts.join(' and ')} \u2014 ` +
+      `a high-Q resonance like this needs a gate of at least \u2248 ${(3.5 * tau).toFixed(0)} ms` +
+      (smear > width ? ` (and longer still, until the kernel narrows below the feature width)` : '') + `.`;
+  }
   els.r3.innerHTML =
-    `Gate <b>${T} ms</b> \u2192 smearing width \u2248 ${lobe}/T = <b>${smear} Hz</b> ` +
+    `Gate <b>${T} ms</b> \u00b7 resonance <b>${state3.f0} Hz</b>, Q = \u03c0f\u2080\u03c4 = <b>${Q.toFixed(0)}</b> \u00b7 ` +
+    `true width 1/(\u03c0\u03c4) = <b>${width.toFixed(1)} Hz</b> vs smearing \u2248 ${lobe}/T = <b>${smear.toFixed(0)} Hz</b> ` +
     `(${wt === 'rect' ? 'rectangular main lobe' : 'half-Hann main lobe, \u2248 2\u00d7 the rectangular one'}) \u2014 ` +
-    `while the true resonance is only \u2248 15 Hz wide. ` +
-    `That ${smear} Hz blur is <b>the same fixed width everywhere</b> \u2014 at 200 Hz exactly as at 5 kHz: ` +
-    `smoothing in Hz, not in octaves. ` +
-    `Share of the resonance's decay energy inside the gate: <b>${captured.toFixed(0)} %</b>. ` +
-    (T >= 55
-      ? `<span class="ok">The gate now covers most of the decay \u2014 the gated spectrum nearly coincides with the true one. Multiplication by 1 did nothing.</span>`
-      : `The 1 kHz peak is broadened and lowered${wt === 'rect' ? ' and surrounded by \u221213 dB leakage sidelobes' : ''} \u2014 exactly the convolution with the kernel shown below.`);
+    `a fixed-Hz blur, the same at 200 Hz as at 5 kHz (smoothing in Hz, not in octaves). ` +
+    `Decay energy inside the gate: <b>${captured.toFixed(0)} %</b>. ${verdict}`;
 }
 
-/* the "smearing kernel": magnitude spectrum of the gate window itself */
-function drawKernel(Tms, wtype) {
+/* the "smearing kernel": magnitude spectrum of the gate window itself,
+   with brackets comparing the kernel width against the resonance width */
+function drawKernel(Tms, wtype, f0, tauMs) {
   const { ctx: c, w, h } = sizeCanvas(els.c3k);
   c.clearRect(0, 0, w, h);
   const Ng = Math.max(2, Math.round(Tms * 1e-3 * FS));
@@ -965,7 +985,9 @@ function drawKernel(Tms, wtype) {
     const wgt = wtype === 'hann' ? 0.5 * (1 + Math.cos(Math.PI * n / Ng)) : 1;
     win[n] = wgt; dc += wgt;
   }
-  const fmax = 4000 / Tms, M = 320;
+  const resW = 1000 / (Math.PI * tauMs);                    // resonance width, Hz
+  const lobeW = (wtype === 'rect' ? 1 : 2) * 1000 / Tms;    // kernel width, Hz
+  const fmax = Math.max(4000 / Tms, 1.25 * f0 + 4 * resW), M = 320;
   const fr = new Float64Array(M);
   for (let i = 0; i < M; i++) fr[i] = i * fmax / (M - 1);
   const db = spectrumDb(win, fr);
@@ -1001,14 +1023,29 @@ function drawKernel(Tms, wtype) {
   c.strokeStyle = '#e05c5c'; c.setLineDash([5, 4]);
   c.beginPath(); c.moveTo(x1, mt); c.lineTo(x1, h - mb); c.stroke();
   c.setLineDash([]);
+  // the resonance location
+  c.strokeStyle = '#3ecf8e'; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(X(f0), mt); c.lineTo(X(f0), h - mb); c.stroke();
+  c.setLineDash([]);
+  c.fillStyle = '#3ecf8e'; c.textAlign = 'left'; c.textBaseline = 'bottom';
+  c.fillText('f\u2080', Math.min(X(f0) + 4, w - mr - 16), h - mb - 2);
+  // width brackets: kernel vs resonance
+  const bracket = (fa, fb, y, color, label) => {
+    const xa = X(Math.max(0, fa)), xb = Math.max(X(fb), xa + 3);
+    c.strokeStyle = color; c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(xa, y); c.lineTo(xb, y);
+    c.moveTo(xa, y - 4); c.lineTo(xa, y + 4);
+    c.moveTo(xb, y - 4); c.lineTo(xb, y + 4);
+    c.stroke();
+    c.fillStyle = color; c.textAlign = 'left'; c.textBaseline = 'bottom';
+    c.fillText(label, Math.min(xb + 6, w - mr - c.measureText(label).width - 2), y + 4);
+  };
+  bracket(0, lobeW, mt + 16, '#e05c5c', `kernel \u2248 ${lobeW.toFixed(0)} Hz`);
+  bracket(f0 - resW / 2, f0 + resW / 2, mt + 34, '#3ecf8e', `resonance \u2248 ${resW.toFixed(0)} Hz`);
   c.restore();
-  c.fillStyle = '#e05c5c'; c.textAlign = 'left'; c.textBaseline = 'top';
-  c.fillText(`1/T = ${(1000 / Tms).toFixed(0)} Hz (first zero of the rectangular kernel)`, Math.min(x1 + 5, w - 240), mt + 4);
-  c.fillStyle = '#93a0b4';
-  c.fillText(
-    wtype === 'rect'
-      ? 'window spectrum |W(f)| \u2014 the smearing kernel: main lobe 1/T wide, sidelobes only \u221213 dB'
-      : 'window spectrum |W(f)| \u2014 the smearing kernel: main lobe \u2248 2/T wide, but sidelobes far lower',
+  c.fillStyle = '#93a0b4'; c.textAlign = 'left'; c.textBaseline = 'top';
+  c.fillText('window spectrum |W(f)| \u2014 red bracket: kernel width \u00b7 green bracket: resonance width \u2014 drag \u03c4 and T and watch them trade',
     ml + 6, 4);
 }
 
@@ -1825,6 +1862,16 @@ els.t3.addEventListener('input', () => {
   throttled3();
 });
 els.win3.addEventListener('change', () => { state3.win = els.win3.value; drawDemo3(); });
+els.f3.addEventListener('input', () => {
+  state3.f0 = parseFloat(els.f3.value);
+  els.f3v.textContent = state3.f0 + ' Hz';
+  throttled3();
+});
+els.tau3.addEventListener('input', () => {
+  state3.tau = parseFloat(els.tau3.value);
+  els.tau3v.textContent = state3.tau.toFixed(1) + ' ms';
+  throttled3();
+});
 els.t4.addEventListener('input', () => {
   state4.Tmax = parseFloat(els.t4.value);
   els.t4v.textContent = state4.Tmax.toFixed(2) + ' ms';

@@ -262,8 +262,9 @@
   <!-- ================= DEMO 3 ================= -->
   <div class="card">
     <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)</h2>
-    <p>This system contains a high-Q resonance at 1 kHz with a 20 ms decay — in the true response it is a
-    narrow feature only ~15 Hz wide.</p>
+    <p>This system contains a tunable high-Q resonance — by default at 1 kHz with a 20 ms decay
+    (Q ≈ 63), a feature only ~15 Hz wide in the true response. Longer τ means higher Q, a longer decay
+    <i>and</i> a narrower feature — exactly the kind of detail a short gate destroys.</p>
     <p>A gate shorter than the decay multiplies the IR, sample by sample,
     by the window — and by the <b>convolution theorem</b>, multiplying in time is exactly the same as
     <b>convolving the true spectrum with the window’s spectrum</b> in frequency. That convolution
@@ -271,8 +272,12 @@
     (hard truncation ≈ 1/T, faded gate ≈ 2/T; Demo 5 measures each one). Fine details get smeared to
     that width:</p>
     <div class="controls">
+      <label>Resonance f₀ <b id="f3v">1000 Hz</b></label>
+      <input type="range" id="f3" min="100" max="5000" step="10" value="1000">
+      <label>Decay τ <b id="tau3v">20.0 ms</b></label>
+      <input type="range" id="tau3" min="1" max="25" step="0.5" value="20">
       <label>Gate length <b id="t3v">8 ms</b></label>
-      <input type="range" id="t3" min="2" max="80" step="1" value="8">
+      <input type="range" id="t3" min="2" max="200" step="1" value="8">
       <label>Window:</label>
       <select id="win3"><option value="rect">rectangular</option><option value="hann">half-Hann fade</option></select>
     </div>
@@ -287,7 +292,9 @@
     <p class="note">The lower plot is the “smearing kernel” — magnitude of the window’s own spectrum
     (linear frequency axis): a sinc-like main lobe with first zero at <code>1/T</code>, and −13 dB
     sidelobes for the rectangular gate. Convolution with it is exactly what gating does to the true
-    spectrum.</p>
+    spectrum. The brackets at its top compare the two widths that decide everything: the kernel’s width
+    (red, ≈ 1/T) against the resonance’s own width (green, 1/(πτ)) — when the red bracket swallows the
+    green one, the feature is gone.</p></p>
     <p class="note">Note what kind of operation this is: a smoothing of <b>fixed width in Hz</b> (≈ 1/T) —
     unlike the octave-based smoothing of ordinary FR plots — applied equally across the whole range.
     It lowers the Q of resonances and can erase any detail finer than the kernel outright. So once the
@@ -295,7 +302,8 @@
     exact multiples of 1/T</b> (200, 400, 600 Hz…); the gate altered the entire curve, everywhere.
     The converse is just as true: if the gate cuts off only a little of the tail, the smoothing
     inflicted is only mild.</p>
-    <p class="note">Grow the gate well past the 20 ms decay time and watch the smeared bump sharpen back into
+    <p class="note">Grow the gate well past the resonance’s decay time (the slider now goes to 200 ms)
+    and watch the smeared bump sharpen back into
     the true narrow resonance. <b>The FFT bin width is irrelevant throughout</b> - all spectra are computed at
     arbitrarily fine (zero-padded) resolution; the only error is the truncation. A half-Hann fade pushes
     the sidelobes down (less leakage) but widens the main lobe to ≈ 2/T — more smearing, less ringing.</p>
@@ -631,7 +639,7 @@
   <footer>Synthetic educational demo — fs = 48 kHz, spectra via direct DTFT (≡ zero-padded FFT).
   Signals: Demo 0 — Gaussian pulse; Demo 1 — fast-decaying modal sum (5 ms);
   Demo 2/4 — modal mid/high + 68 Hz port resonance (τ ≈ 11 ms) + reflection at 14 ms;
-  Demo 3 — modal background + 1 kHz resonance, Q ≈ 63, τ = 20 ms;
+  Demo 3 — modal background + tunable resonance (default 1 kHz, τ = 20 ms, Q ≈ 63);
   Demo 5 — rectangular / half-Hann / Kaiser / exponential gates at one adjustable length T (default 10 ms);
   Demo 6 — the reflection-free version of the Demo 2 speaker (tail modeled past the reflection).</footer>
 </div>
