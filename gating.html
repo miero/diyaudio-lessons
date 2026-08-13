@@ -207,6 +207,11 @@
       <div class="pwhy" id="p1why"></div>
     </div>
     <canvas id="c1" class="h300"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#8a95a6"></span> same 5 ms at very high resolution</span>
+      <span><span class="swatch" style="background:#4da3ff"></span> FFT bins (dots)</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T = 200 Hz</span>
+    </div>
     <div class="readout" id="r1"></div>
     <p class="note">Grey curve: the same 5 ms of data evaluated at very high resolution. Every dot — at
     <i>any</i> padding factor — lands exactly on it. Padding computes <b>true, exact values between the
@@ -239,6 +244,14 @@
     </div>
     <canvas id="c2" class="h300"></canvas>
     <canvas id="c2ir" class="h240" style="margin-top:10px"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#4da3ff"></span> current gate</span>
+      <span><span class="swatch" style="background:#3ecf8e"></span> reference at 2×T (dashed)</span>
+      <span><span class="swatch" style="background:#5a6575"></span> fixed reference gates</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> gate window / gate end (IR plot)</span>
+      <span><span class="swatch" style="background:#ff6b6b"></span> reflection (IR plot)</span>
+    </div>
     <div class="readout" id="r2"></div>
     <p class="note"><b>How to read it:</b> the dashed line marks <code>1/T</code> — not an FFT bin
     spacing. The FFT resolution for the gate length implies nothing here (everything is computed at
@@ -297,6 +310,13 @@
     </div>
     <canvas id="c3" class="h300"></canvas>
     <canvas id="c3k" class="h240" style="margin-top:10px"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#9aa5b5"></span> true response</span>
+      <span><span class="swatch" style="background:#4da3ff"></span> gated</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T · red bracket = kernel width</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> kernel |W(f)|</span>
+      <span><span class="swatch" style="background:#3ecf8e"></span> f₀ · green bracket = resonance width</span>
+    </div>
     <div class="readout" id="r3"></div>
     <p class="note">The lower plot is the “smearing kernel” — magnitude of the window’s own spectrum
     (linear frequency axis): a sinc-like main lobe with first zero at <code>1/T</code>, and −13 dB
@@ -338,6 +358,13 @@
         <input type="range" id="t4" min="6" max="13.75" step="0.25" value="13"><b class="val" id="t4v">13.00 ms</b></div>
     </div>
     <canvas id="c4" class="h300"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#6b7684"></span> family of gates (1 ms → T<sub>max</sub>)</span>
+      <span><span class="swatch" style="background:rgba(255,159,67,0.6)"></span> min/max band = remaining uncertainty</span>
+      <span><span class="swatch" style="background:#3ecf8e"></span> longest gate (best estimate)</span>
+      <span><span class="swatch" style="background:#e8edf4"></span> true anechoic (dashed)</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T<sub>max</sub></span>
+    </div>
     <div class="readout" id="r4"></div>
     <p class="note">Left of the dashed line (<code>1/T</code> of the longest gate) the band is wide:
     those frequencies are <b>not resolved</b> by the available impulse data — different amounts of the
@@ -445,6 +472,13 @@
     </div>
     <canvas id="d6t" class="h240"></canvas>
     <canvas id="d6s" class="h240" style="margin-top:10px"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#8a95a6"></span> room IR · naive peak-pick (dot)</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> fitted damped sinusoid</span>
+      <span><span class="swatch" style="background:#3ecf8e"></span> fit-window spectrum</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> fitted f₀</span>
+      <span><span class="swatch" style="background:#ff6b6b"></span> reflection</span>
+    </div>
     <div class="readout" id="d6fit"></div>
     <p class="note">Top: the measured room IR (the 14 ms reflection is the big spike); shaded, the fit
     window; in color, the fitted damped sinusoid — when the window is well chosen it hugs the data almost
@@ -465,6 +499,12 @@
         <input type="range" id="t6" min="15" max="120" step="1" value="40"><b class="val" id="t6v">40 ms</b></div>
     </div>
     <canvas id="c6" class="h300"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#8a95a6"></span> real data only (gated at the fit-window end)</span>
+      <span><span class="swatch" style="background:#4da3ff"></span> real data + synthesized tail</span>
+      <span><span class="swatch" style="background:#e8edf4"></span> true response (dashed)</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T</span>
+    </div>
     <div class="readout" id="r6"></div>
     <p class="note">Grey: real data only, gated where the fit window ends — the 68 Hz port bump is
     unresolved. Blue: real data plus the tail <i>synthesized from the fitted parameters</i>, out to the
@@ -507,6 +547,12 @@
     </div>
     <canvas id="cp1" class="h240"></canvas>
     <canvas id="cp2" class="h240" style="margin-top:10px"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#4da3ff"></span> decay envelope · your resonance (dot)</span>
+      <span><span class="swatch" style="background:#ff6b6b"></span> reflection limit</span>
+      <span><span class="swatch" style="background:#3ecf8e"></span> gate needed for the decay target</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> max fully-resolvable Q vs frequency</span>
+    </div>
     <div class="readout" id="rp"></div>
     <p class="note">Top plot: the resonance’s decay envelope in dB against the two time limits — the
     reflection (red) and the gate needed to reach the decay target (green). Bottom plot: the maximum Q
