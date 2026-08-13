@@ -163,6 +163,7 @@ class Plot {
   }
   setRange(lo, hi) { this.ymin = lo; this.ymax = hi; }
   X(f) { return ML + (Math.log10(f / FMIN) / Math.log10(FMAX / FMIN)) * (this.w - ML - MR); }
+  freqAt(px) { return FMIN * Math.pow(FMAX / FMIN, (px - ML) / (this.w - ML - MR)); }
   Y(db) { return MT + (1 - (db - this.ymin) / (this.ymax - this.ymin)) * (this.h - MT - MB); }
   frame() {
     const c = this.ctx, w = this.w, h = this.h;
@@ -270,6 +271,7 @@ class TimePlot {
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
   X(t) { return ML + (t / this.tmax) * (this.w - ML - MR); }
+  msAt(px) { return (px - ML) / (this.w - ML - MR) * this.tmax; }
   Y(db) { return MT + (1 - (db - this.ymin) / (this.ymax - this.ymin)) * (this.h - MT - MB); }
   frame() {
     const c = this.ctx, w = this.w, h = this.h;
@@ -338,7 +340,7 @@ for (const id of ['c0t', 'c0f', 'c1', 'c2', 'c2ir', 'c3', 'c3k', 'c4',
                   'dsAr', 'dsBr', 'dsModes', 'dsLegend', 'd6fit',
                   's0', 's5', 't2', 'win2', 'ghosts2', 't3', 'win3', 't4', 't6',
                   'dsAf', 'dsAtau', 'dsAfV', 'dsAtauV', 'd6fs', 'd6fe', 'd6fsV', 'd6feV',
-                  's0v', 's5v', 't2v', 't3v', 't4v', 't6v', 'padBtns',
+                  's0v', 's5v', 's5t', 's5tV', 't2v', 't3v', 't4v', 't6v', 'padBtns',
                   'pf0', 'pQ', 'pdB', 'ptRefl', 'pf0v', 'pQv', 'ptRefv',
                   'pd', 'phs', 'phm', 'pbApply', 'pbVal',
                   'p1', 'p1why', 'p3', 'p3why',
@@ -361,7 +363,7 @@ const plots = {
    g(t) = exp(-t^2/(2 sigT^2))  <=>  G(f) ~ exp(-f^2/(2 sigF^2)),
    with sigF = 1/(2*pi*sigT)  ->  sigT*sigF = 1/(2*pi), invariant.      */
 
-const state0 = { sig: 1.5 }; // sigma_t in ms
+const state0 = { sig: parseFloat(els.s0.value) }; // sigma_t in ms, from the slider
 
 function drawLinPlot(cv, xs, ys, { xmin, xmax, xticks, xlabels, title, color = '#4da3ff', fill = null }) {
   const { ctx: c, w, h } = sizeCanvas(cv);
@@ -463,7 +465,7 @@ function dampedSinusoid(fHz, tauMs, a, durSec) {
 }
 
 /* ---- Part A: one resonance, dissected ---- */
-const stateA = { f: 400, tau: 2 };
+const stateA = { f: parseFloat(els.dsAf.value), tau: parseFloat(els.dsAtau.value) };
 
 function drawDStime() {
   const f = stateA.f, tauMs = stateA.tau;
@@ -797,7 +799,7 @@ function drawDemo1() {
 
 /* ---------------------------- Demo 2 --------------------------------- */
 
-const state2 = { T: 5, win: 'rect', ghosts: true };
+const state2 = { T: parseFloat(els.t2.value), win: els.win2.value || 'rect', ghosts: els.ghosts2.checked };
 const GHOSTS = [2, 4, 8, 12];
 const ghostCache = {};
 function getGhosts(wt) {
@@ -924,7 +926,7 @@ function drawIRView(Tms, wtype) {
 
 /* ---------------------------- Demo 3 --------------------------------- */
 
-const state3 = { T: 8, win: 'rect' };
+const state3 = { T: parseFloat(els.t3.value), win: els.win3.value || 'rect' };
 const TAU3 = 20; // resonance decay time, ms
 
 function drawDemo3() {
@@ -1012,7 +1014,7 @@ function drawKernel(Tms, wtype) {
 
 /* ---------------------------- Demo 4 --------------------------------- */
 
-const state4 = { Tmax: 13 };
+const state4 = { Tmax: parseFloat(els.t4.value) };
 
 function drawDemo4() {
   const Tmax = state4.Tmax;
@@ -1067,7 +1069,7 @@ function drawDemo4() {
    are T long (T = 10 ms -> N = 480), start at 1 and fade toward 0 like a
    real gate; spectra plotted vs f*T so the rect first zero sits at 1.    */
 
-const state5 = { beta: 6 };
+const state5 = { beta: parseFloat(els.s5.value), T: parseFloat(els.s5t.value) };
 
 function besselI0(x) {
   let sum = 1, term = 1;
@@ -1097,17 +1099,18 @@ function makeWindow(type, N, beta) {
    - lobeT: smoothing width = full -6 dB width of the kernel, in 1/T units
    - sl:    first sidelobe (ringing) level, or null if the skirt decays
             monotonically (no sidelobes at all)                             */
-function analyzeWin(type, beta) {
-  const N = 480, M = 2400;
+function analyzeWin(type, beta, Tms) {
+  const N = Math.max(2, Math.round(Tms * 1e-3 * FS)), M = 2400;
   const w = makeWindow(type, N, beta);
+  const oneOverT = 1000 / Tms;                 // Hz
   const fr = new Float64Array(M);
-  for (let i = 0; i < M; i++) fr[i] = i * 500 / (M - 1); // 0..500 Hz, T=10ms -> fT 0..5
+  for (let i = 0; i < M; i++) fr[i] = i * 5 * oneOverT / (M - 1); // f\u00b7T in 0..5
   const db = spectrumDb(w, fr);
   const dc = db[0];
   for (let i = 0; i < M; i++) db[i] = Math.max(-140, db[i] - dc);
   let i6 = -1;
   for (let i = 1; i < M; i++) { if (db[i] < -6) { i6 = i; break; } }
-  const lobeT = i6 > 0 ? 2 * fr[i6] / 100 : NaN; // full -6 dB width, units of 1/T
+  const lobeT = i6 > 0 ? 2 * fr[i6] / oneOverT : NaN; // full -6 dB width, units of 1/T
   let iMin = -1;
   for (let i = (i6 > 0 ? i6 : 4) + 1; i < M - 1; i++) {
     if (db[i] < db[i - 1] && db[i] <= db[i + 1]) { iMin = i; break; }
@@ -1117,7 +1120,7 @@ function analyzeWin(type, beta) {
     sl = -Infinity;
     for (let i = iMin + 1; i < M; i++) if (db[i] > sl) sl = db[i];
   }
-  return { fT: Array.from(fr, f => f / 100), db, lobeT, sl };
+  return { fT: Array.from(fr, f => f / oneOverT), db, lobeT, sl };
 }
 
 const WIN_DEFS = [
@@ -1129,13 +1132,14 @@ const WIN_DEFS = [
 ];
 let winCache = null;
 function getWinCache() {
-  if (!winCache) winCache = WIN_DEFS.map(d => ({ ...d, an: analyzeWin(d.type, d.beta) }));
-  return winCache;
+  if (!winCache || winCache.T !== state5.T)
+    winCache = { T: state5.T, wins: WIN_DEFS.map(d => ({ ...d, an: analyzeWin(d.type, d.beta, state5.T) })) };
+  return winCache.wins;
 }
 
 function drawDemo5() {
-  const beta = state5.beta;
-  const user = analyzeWin('kaiser', beta);
+  const beta = state5.beta, T5 = state5.T;
+  const user = analyzeWin('kaiser', beta, T5);
   const wins = getWinCache();
 
   /* --- time view: the window shapes --- */
@@ -1143,16 +1147,18 @@ function drawDemo5() {
     const { ctx: c, w, h } = sizeCanvas(els.c5w);
     c.clearRect(0, 0, w, h);
     const ml = 44, mr = 14, mt = 10, mb = 24;
-    const N = 480;
+    const N = Math.max(2, Math.round(T5 * 1e-3 * FS));
     const X = n => ml + n / (N - 1) * (w - ml - mr);
     const Y = v => mt + (1 - v) * (h - mt - mb);
     c.font = '11px system-ui'; c.lineWidth = 1;
     c.textAlign = 'center'; c.textBaseline = 'top';
-    for (let ms = 0; ms <= 10; ms += 2) {
-      const x = X(ms * 48);
+    const tst = niceStep(T5 / 5);
+    for (let ms = 0; ms <= T5 + 1e-9; ms += tst) {
+      const x = X(ms * FS / 1000);
       c.strokeStyle = '#232c38';
       c.beginPath(); c.moveTo(x, mt); c.lineTo(x, h - mb); c.stroke();
-      c.fillStyle = '#7d8899'; c.fillText(ms + (ms === 10 ? ' ms' : ''), x, h - mb + 5);
+      c.fillStyle = '#7d8899';
+      c.fillText((Math.round(ms * 10) / 10) + (T5 - ms < tst ? ' ms' : ''), x, h - mb + 5);
     }
     c.textAlign = 'right'; c.textBaseline = 'middle';
     for (const v of [0, 0.5, 1]) {
@@ -1172,7 +1178,7 @@ function drawDemo5() {
     }
     c.restore();
     c.fillStyle = '#93a0b4'; c.textAlign = 'left'; c.textBaseline = 'top';
-    c.fillText('gate shapes, all T = 10 ms long', ml + 6, mt + 4);
+    c.fillText(`gate shapes, all T = ${T5.toFixed(1)} ms long`, ml + 6, mt + 4);
   }
 
   /* --- spectra view --- */
@@ -1259,7 +1265,7 @@ function drawDemo5() {
 
   els.r5.innerHTML =
     `Kaiser \u03b2 = <b>${beta.toFixed(1)}</b>: smoothing width \u2248 <b>${user.lobeT.toFixed(2)}/T</b> ` +
-    `(= ${(user.lobeT * 100).toFixed(0)} Hz for a 10 ms gate), ringing: ` +
+    `(= ${(user.lobeT * 1000 / T5).toFixed(0)} Hz for a ${T5.toFixed(1)} ms gate), ringing: ` +
     (user.sl === null ? `<b>none</b> \u2014 the kernel skirt decays monotonically` : `first sidelobe \u2248 <b>${user.sl.toFixed(1)} dB</b>`) + `. ` +
     `Rectangular is the opposite corner: narrowest kernel (1.21/T) but \u221213.3 dB sidelobes \u2014 visible as the ripples ` +
     `beside smeared features in Demo 3. <span class="hl">More taper \u2192 less ringing, wider smearing kernel. Pick where you sit.</span>`;
@@ -1273,7 +1279,7 @@ function drawDemo5() {
    2. USE it: splice the synthesized tail in at the fit-window end and run
       it past the reflection -> an effectively longer gate.              */
 
-const state6 = { fitStart: 3, fitEnd: 13, T: 40 };
+const state6 = { fitStart: parseFloat(els.d6fs.value), fitEnd: parseFloat(els.d6fe.value), T: parseFloat(els.t6.value) };
 let truthDb6 = null;
 function getTruth6() { if (!truthDb6) truthDb6 = spectrumDb(truthSlow, GRID); return truthDb6; }
 function nearestIdx(freqs, f) {
@@ -1533,7 +1539,7 @@ function drawDemo6() {
    tau = Q/(pi f0); reaching -D dB takes tau * D/8.686. The room caps the
    gate at the first-reflection delay -> resolution floor 1/T.           */
 
-const stateP = { f0: 1000, Q: 3, dB: 60, tRefl: 7 };
+const stateP = { f0: parseFloat(els.pf0.value), Q: parseFloat(els.pQ.value), dB: parseFloat(els.pdB.value), tRefl: parseFloat(els.ptRefl.value) };
 const DB_PER_TAU = 20 / Math.log(10); // 8.686 dB of amplitude decay per tau
 
 function drawPlannerDecay(tau, Tneed, Tallow, dBtarget) {
@@ -1679,10 +1685,10 @@ const PREDICTS = {
   },
   p3: {
     opts: ['Still \u2248 15 Hz \u2014 the resonance is a property of the speaker',
-           '\u2248 125 Hz wide \u2014 smeared to the window\u2019s 1/T',
+           `\u2248 ${Math.round(1000 / parseFloat(els.t3.value))} Hz wide \u2014 smeared to the window\u2019s 1/T`,
            '\u2248 1 kHz wide \u2014 set by the sampling rate'],
     correct: 1,
-    why: 'The gated spectrum is the true spectrum convolved with the window\u2019s kernel; the rectangular main lobe is 1/T = 1/8 ms = 125 Hz wide, so any finer detail \u2014 like the 15 Hz resonance \u2014 is broadened to that width and lowered. Scroll down to the kernel plot to see why.',
+    why: `The gated spectrum is the true spectrum convolved with the window\u2019s kernel; the rectangular main lobe is 1/T = 1/${parseFloat(els.t3.value)} ms = ${Math.round(1000 / parseFloat(els.t3.value))} Hz wide, so any finer detail \u2014 like the 15 Hz resonance \u2014 is broadened to that width and lowered. Scroll down to the kernel plot to see why.`,
   },
 };
 
@@ -1831,6 +1837,11 @@ els.s5.addEventListener('input', () => {
   els.s5v.textContent = state5.beta.toFixed(1);
   throttled5();
 });
+els.s5t.addEventListener('input', () => {
+  state5.T = parseFloat(els.s5t.value);
+  els.s5tV.textContent = state5.T.toFixed(1) + ' ms';
+  throttled5();
+});
 
 const throttled6 = rafThrottle(() => drawDemo6());
 const throttled6all = rafThrottle(() => { drawDemo6Fit(); drawDemo6(); });
@@ -1891,6 +1902,77 @@ els.pbApply.addEventListener('click', () => {
   }
 });
 updateBounce();
+
+/* ---- direct manipulation: drag markers on the plots ------------------
+   The gate length can be dragged where it is drawn: the red 1/T line on
+   the frequency plots, the kernel's first zero in Demo 3, and the gate
+   edge in Demo 2's IR view. Dragging clamps/quantizes to the matching
+   slider's own min/max/step and keeps slider, label and state in sync. */
+
+function dragSet(inputEl, labelEl, fmt, raw, apply) {
+  const min = parseFloat(inputEl.min), max = parseFloat(inputEl.max);
+  const step = parseFloat(inputEl.step);
+  let v = raw;
+  if (isFinite(min) && isFinite(max)) {
+    v = Math.min(max, Math.max(min, v));
+    if (isFinite(step) && step > 0) v = Math.min(max, Math.max(min, Math.round((v - min) / step) * step + min));
+  }
+  inputEl.value = String(v);
+  labelEl.textContent = fmt(v);
+  apply(v);
+}
+
+function makeDraggable(cv, getX, onDrag) {
+  const tol = 14;
+  let dragging = false;
+  cv.style.touchAction = 'none';
+  const px = e => e.clientX - cv.getBoundingClientRect().left;
+  cv.addEventListener('pointerdown', e => {
+    if (Math.abs(px(e) - getX()) > tol) return;
+    dragging = true;
+    if (cv.setPointerCapture) cv.setPointerCapture(e.pointerId);
+    onDrag(px(e));
+    e.preventDefault();
+  });
+  cv.addEventListener('pointermove', e => {
+    const x = px(e);
+    if (dragging) onDrag(x);
+    else cv.style.cursor = Math.abs(x - getX()) <= tol ? 'ew-resize' : '';
+  });
+  cv.addEventListener('pointerup', () => { dragging = false; });
+  cv.addEventListener('pointercancel', () => { dragging = false; });
+}
+
+// demo 2: the 1/T line on the FR plot, or the gate edge on the IR plot
+makeDraggable(els.c2, () => plots.d2.X(1000 / state2.T), x => {
+  dragSet(els.t2, els.t2v, v => v.toFixed(2) + ' ms', 1000 / plots.d2.freqAt(x),
+    v => { state2.T = v; throttled2(); });
+});
+makeDraggable(els.c2ir, () => plots.ir.X(Math.min(state2.T, plots.ir.tmax)), x => {
+  dragSet(els.t2, els.t2v, v => v.toFixed(2) + ' ms', plots.ir.msAt(x),
+    v => { state2.T = v; throttled2(); });
+});
+// demo 3: the 1/T line on the FR plot and the kernel's first zero
+makeDraggable(els.c3, () => plots.d3.X(1000 / state3.T), x => {
+  dragSet(els.t3, els.t3v, v => v + ' ms', 1000 / plots.d3.freqAt(x),
+    v => { state3.T = v; throttled3(); });
+});
+makeDraggable(els.c3k, () => 40 + 0.25 * (els.c3k.getBoundingClientRect().width - 54), x => {
+  const w = els.c3k.getBoundingClientRect().width;
+  const f = Math.max(1e-6, (x - 40) / (w - 54) * (4000 / state3.T));
+  dragSet(els.t3, els.t3v, v => v + ' ms', 1000 / f,
+    v => { state3.T = v; throttled3(); });
+});
+// demo 4: the 1/Tmax line
+makeDraggable(els.c4, () => plots.d4.X(1000 / state4.Tmax), x => {
+  dragSet(els.t4, els.t4v, v => v.toFixed(2) + ' ms', 1000 / plots.d4.freqAt(x),
+    v => { state4.Tmax = v; throttled4(); });
+});
+// demo 6: the 1/T line of the effective gate
+makeDraggable(els.c6, () => plots.d6.X(1000 / state6.T), x => {
+  dragSet(els.t6, els.t6v, v => v + ' ms', 1000 / plots.d6.freqAt(x),
+    v => { state6.T = v; throttled6(); });
+});
 
 renderPredict('p1');
 renderPredict('p3');

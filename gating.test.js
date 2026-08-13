@@ -14,11 +14,31 @@ function makeCtx() {
   });
 }
 
+const INPUT_DEFAULTS = {
+  s0: '1.5', dsAf: '400', dsAtau: '2',
+  t2: '5', win2: 'rect', t3: '8', win3: 'rect', t4: '13', t6: '40',
+  s5: '6', s5t: '10',
+  d6fs: '3', d6fe: '13',
+  pf0: '1000', pQ: '3', pdB: '60', ptRefl: '7',
+  pd: '2', phs: '2', phm: '2',
+};
+
+const INPUT_ATTRS = {
+  t2: { min: '1', max: '22', step: '0.25' },
+  t3: { min: '2', max: '80', step: '1' },
+  t4: { min: '6', max: '13.75', step: '0.25' },
+  t6: { min: '15', max: '120', step: '1' },
+  s5t: { min: '2', max: '40', step: '0.5' },
+};
+
 function makeEl(id) {
   return {
     id,
     width: 0, height: 0,
-    value: id === 't2' ? '5' : id === 't3' ? '8' : id === 't4' ? '13' : '',
+    value: INPUT_DEFAULTS[id] ?? '',
+    min: INPUT_ATTRS[id] ? INPUT_ATTRS[id].min : undefined,
+    max: INPUT_ATTRS[id] ? INPUT_ATTRS[id].max : undefined,
+    step: INPUT_ATTRS[id] ? INPUT_ATTRS[id].step : undefined,
     checked: true,
     textContent: '',
     innerHTML: '',
@@ -26,10 +46,11 @@ function makeEl(id) {
     classList: { add() {}, remove() {} },
     style: {},
     getContext: () => makeCtx(),
-    getBoundingClientRect: () => ({ width: 900, height: id === 'c2ir' ? 250 : id === 'c3k' ? 150 : 320 }),
+    getBoundingClientRect: () => ({ width: 900, height: id === 'c2ir' ? 250 : id === 'c3k' ? 150 : 320, left: 0 }),
     addEventListener(type, fn) { (this._h || (this._h = {}))[type] = fn; },
     fire(type) { if (this._h && this._h[type]) this._h[type](); },
     appendChild() {},
+    setPointerCapture() {},
   };
 }
 
@@ -105,6 +126,41 @@ for (const v of ['3', '6', '12']) {
   s5.value = v;
   tryState(`demo5 beta=${v}`, () => s5.fire('input'), 'r5');
 }
+const s5t = els.get('s5t');
+for (const v of ['2', '10', '40']) {
+  s5t.value = v;
+  tryState(`demo5 T=${v} ms`, () => s5t.fire('input'), 'r5');
+}
+s5t.value = '10'; s5t.fire('input');
+
+/* ---- drag simulation: pointer events on the draggable plots ---- */
+function dragTo(cv, slider, startX, endX, desc) {
+  try {
+    cv._h.pointerdown({ clientX: startX, pointerId: 1, preventDefault() {} });
+    cv._h.pointermove({ clientX: endX });
+    cv._h.pointerup({});
+    console.log(`OK  drag ${desc} \u2192 ${slider.id} = ${slider.value}\n`);
+  } catch (e) { console.log(`FAIL drag ${desc}: ${e.message}\n`); process.exitCode = 1; }
+}
+// marker positions: plot.w = 900 css px, ML = 48, MR = 14 (log axis: x(f) = 48 + log10(f/20)/3 * 838)
+t2.value = '5'; t2.fire('input');
+t3.value = '8'; t3.fire('input');
+t4.value = '13'; t4.fire('input');
+els.get('t6').value = '40'; els.get('t6').fire('input');
+const lx = f => Math.round(48 + Math.log10(f / 20) / 3 * 838);
+dragTo(els.get('c3'), els.get('t3'), lx(125), lx(100), 'demo3 1/T line 8 \u2192 10 ms');
+dragTo(els.get('c2'), els.get('t2'), lx(200), lx(100), 'demo2 1/T line 5 \u2192 10 ms');
+dragTo(els.get('c4'), els.get('t4'), lx(1000 / 13), lx(100), 'demo4 1/Tmax line 13 \u2192 10 ms');
+dragTo(els.get('c6'), els.get('t6'), lx(25), 26, 'demo6 1/T line 40 \u2192 60 ms');
+// kernel plot: first zero sits at a quarter of the axis (x = 40..w-14)
+dragTo(els.get('c3k'), els.get('t3'), 40 + 0.25 * (900 - 54), 40 + 0.32 * (900 - 54), 'demo3 kernel zero (shorter gate)');
+// IR plot gate edge: x(t) = 48 + t/24 * 838; t2 is at 10 ms after the c2 drag above
+dragTo(els.get('c2ir'), els.get('t2'), Math.round(48 + 10 / 24 * 838), Math.round(48 + 12 / 24 * 838), 'demo2 IR gate edge 10 \u2192 12 ms');
+// restore defaults
+t2.value = '5'; t2.fire('input');
+t3.value = '8'; t3.fire('input');
+t4.value = '13'; t4.fire('input');
+els.get('t6').value = '40'; els.get('t6').fire('input');
 
 /* ---- demo 6: fit window + extension ---- */
 const t6 = els.get('t6'), d6fs = els.get('d6fs'), d6fe = els.get('d6fe');

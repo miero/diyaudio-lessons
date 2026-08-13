@@ -82,7 +82,8 @@
   <p class="sub">An interactive walkthrough of how loudspeaker impulse-response gating really works —
   why zero-padding is mandatory, why <i>truncation</i> (not FFT bin width) sets the resolution, how
   windows smear the spectrum, how to tell whether a gate is long enough, and what to do — and what to
-  show — when it isn’t.</p>
+  show — when it isn’t. The red <b>1/T markers and gate edges are draggable directly on the plots</b> —
+  grab one and pull.</p>
 
   <div class="card">
     <h2>The claims being demonstrated</h2>
@@ -239,7 +240,8 @@
     something sharper — the signature of an IR that has not finished decaying inside the gate. Slide past 14 ms to see what a
     reflection does: a comb filter appears — the response is no longer free-field at all. The decay of the
     IR itself can also be “read” in the lower plot, but judging that by eye takes experience; the FR
-    convergence test is objective.</p>
+    convergence test is objective. <b>Tip:</b> you can also grab the gate itself — drag the orange
+    gate-end marker in the IR plot, or the red 1/T line above.</p>
     <div class="myth"><div class="mhead">✗ Myth — “gating removes reflections for free”</div>
       <div class="fix">You always pay: cutting the IR at the reflection caps your frequency resolution at
       ≈ 1/T. Reflections are removed in time, and the bill is charged in low-frequency detail. There is no
@@ -266,7 +268,7 @@
       <div class="pwhy" id="p3why"></div>
     </div>
     <canvas id="c3" class="h300"></canvas>
-    <canvas id="c3k" class="h150" style="margin-top:10px"></canvas>
+    <canvas id="c3k" class="h240" style="margin-top:10px"></canvas>
     <div class="readout" id="r3"></div>
     <p class="note">The lower plot is the “smearing kernel” — magnitude of the window’s own spectrum
     (linear frequency axis): a sinc-like main lobe with first zero at <code>1/T</code>, and −13 dB
@@ -282,7 +284,8 @@
     arbitrarily fine (zero-padded) resolution; the only error is the truncation. A half-Hann fade pushes
     the sidelobes down (less leakage) but widens the main lobe to ≈ 2/T — more smearing, less ringing.
     And note: if the gate fully contains everything significant in the IR, multiplication by 1 changes
-    nothing — that is the <i>definition</i> of the correct gate length; there is no other general rule.</p>
+    nothing — that is the <i>definition</i> of the correct gate length; there is no other general rule.
+    The red 1/T line above (and the kernel’s first zero below) is draggable.</p>
     <div class="myth"><div class="mhead">✗ Myth — “if the curve looks smooth, it’s resolved”</div>
       <div class="fix">Smoothness can be <b>caused by smearing</b>, not by the absence of detail. A too-short
       gate blurs sharp resonances and notches into gentle bumps. The only objective test is convergence:
@@ -312,7 +315,7 @@
     the band collapses wherever the response has converged — “short in time means smooth in frequency”,
     so convergence arrives first at high frequencies — while at low frequencies the family of curves is
     still heading toward the dashed true response. The band shows how far the answer can still move;
-    shrinking it needs a longer gate — or a different method.</p>
+    shrinking it needs a longer gate — or a different method. The red 1/T<sub>max</sub> line is draggable.</p>
     <div class="myth"><div class="mhead">✗ Myth — “the dotted line below 1/T is the real response”</div>
       <div class="fix">Below 1/T the data simply cannot resolve features — the curve there is a
       window-smoothed estimate carrying a real uncertainty. Reporting it as a confident thin line (or a fake
@@ -328,11 +331,13 @@
     trade — the seesaw of Demo 0 again — you only choose where to sit on the curve. All windows below have
     the same length T and start at the impulse; the rectangular one is the “pure truncation” of Demo 3:</p>
     <div class="controls">
+      <label>Gate length T <b id="s5tV">10.0 ms</b></label>
+      <input type="range" id="s5t" min="2" max="40" step="0.5" value="10">
       <label>Kaiser taper β <b id="s5v">6.0</b></label>
       <input type="range" id="s5" min="3" max="12" step="0.1" value="6">
       <span class="note" style="font-size:12.5px">drag to move the blue point along the trade-off curve</span>
     </div>
-    <canvas id="c5w" class="h150"></canvas>
+    <canvas id="c5w" class="h240"></canvas>
     <canvas id="c5s" class="h240" style="margin-top:10px"></canvas>
     <canvas id="c5t" class="h240" style="margin-top:10px"></canvas>
     <div class="readout" id="r5"></div>
@@ -428,7 +433,7 @@
     wrong. <b>That is the catch, made visible:</b> real tails are only approximately sums of damped
     sinusoids, and a bad fit injects plausible-looking but wrong bass — which is why this is the advanced
     option, not the default. What the model tries to reconstruct in software, ground-plane and nearfield
-    measurements give you for free.</p>
+    measurements give you for free. The red 1/T line is draggable.</p>
   </div>
 
   <!-- ================= PLANNER ================= -->
@@ -600,7 +605,7 @@
   Signals: Demo 0 — Gaussian pulse; Demo 1 — fast-decaying modal sum (5 ms);
   Demo 2/4 — modal mid/high + 68 Hz port resonance (τ ≈ 11 ms) + reflection at 14 ms;
   Demo 3 — modal background + 1 kHz resonance, Q ≈ 63, τ = 20 ms;
-  Demo 5 — rectangular / half-Hann / Kaiser / exponential gates, all T = 10 ms;
+  Demo 5 — rectangular / half-Hann / Kaiser / exponential gates at one adjustable length T (default 10 ms);
   Demo 6 — the reflection-free version of the Demo 2 speaker (tail modeled past the reflection).</footer>
 </div>
 <script src="gating.js"></script>
