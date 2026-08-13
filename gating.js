@@ -346,7 +346,7 @@ for (const id of ['c0t', 'c0f', 'c1', 'c2', 'c2ir', 'c3', 'c3k', 'c4',
                   'pf0', 'pQ', 'pdB', 'ptRefl', 'pf0v', 'pQv', 'ptRefv',
                   'pd', 'phs', 'phm', 'pbApply', 'pbVal',
                   'p1', 'p1why', 'p3', 'p3why',
-                  'quiz', 'qzscore', 'qzreset']) {
+                  'quizbox', 'qzscore', 'qzreset']) {
   els[id] = document.getElementById(id);
 }
 
@@ -1800,7 +1800,7 @@ function updateScore() {
     : '';
 }
 function renderQuiz() {
-  const box = els.quiz;
+  const box = els.quizbox;
   box.innerHTML = '';
   quizScore = 0; quizAnswered = 0; updateScore();
   QUIZ.forEach((item, i) => {

@@ -75,6 +75,10 @@
   .dsrow .pars{color:var(--muted);margin-left:auto;font-size:12.5px;text-align:right;white-space:nowrap}
   .dslegend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
   .dslegend span{display:inline-flex;align-items:center;gap:5px}
+  .toc{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 4px;font-size:12.5px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .card{scroll-margin-top:12px}
 </style>
 </head>
 <body>
@@ -88,8 +92,25 @@
   spectrum, how to tell whether a gate is long enough, and what to show when it isn’t.</p>
   <p class="sub">The red <b>1/T markers and gate edges are draggable directly on the plots</b> — grab one
   and pull.</p>
+  <nav class="toc">
+    <a href="#claims">Claims</a>
+    <a href="#demo-0">Demo 0 · seesaw</a>
+    <a href="#building-blocks">Building blocks</a>
+    <a href="#demo-1">Demo 1 · zero-padding</a>
+    <a href="#demo-2">Demo 2 · gate length</a>
+    <a href="#demo-3">Demo 3 · truncation</a>
+    <a href="#demo-4">Demo 4 · uncertainty</a>
+    <a href="#demo-5">Demo 5 · windows</a>
+    <a href="#excitation">Excitation</a>
+    <a href="#demo-6">Demo 6 · tail fit</a>
+    <a href="#planner">Planner</a>
+    <a href="#discussion">Discussion</a>
+    <a href="#takeaways">Takeaways</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#advanced">Advanced</a>
+  </nav>
 
-  <div class="card">
+  <div class="card" id="claims">
     <h2>The claims being demonstrated</h2>
     <p>Two objects to keep apart throughout this page: <b>the device’s frequency response</b> — the true
     response of the DUT, what you want — and <b>the DFT of the gated record</b> — what you actually
@@ -126,7 +147,7 @@
   </div>
 
   <!-- ================= DEMO 0 ================= -->
-  <div class="card">
+  <div class="card" id="demo-0">
     <h2>Demo 0 — The seesaw: why 1/T is a law, not a limitation</h2>
     <p>Every result on this page follows from one fact: <b>a signal cannot be simultaneously narrow in time
     and narrow in frequency.</b> Below is a Gaussian pulse — the unique shape that reaches the tightest
@@ -149,7 +170,7 @@
   </div>
 
   <!-- ================= BUILDING BLOCKS ================= -->
-  <div class="card">
+  <div class="card" id="building-blocks">
     <h2>The building blocks — damped sinusoids</h2>
     <p><b>Every impulse response on this page — and every real loudspeaker’s — is a sum of damped
     sinusoids.</b> Why? Every resonance in the system (woofer in its box, port, cabinet panel, breakup
@@ -202,7 +223,7 @@
   </div>
 
   <!-- ================= DEMO 1 ================= -->
-  <div class="card">
+  <div class="card" id="demo-1">
     <h2>Demo 1 — Zero-padding reveals the data, it doesn’t invent it</h2>
     <p>This IR (a little “2-way speaker”) decays below ≈ −60 dB within <b>5 ms</b>, so a 5 ms gate throws
     away nothing significant — the true response genuinely continues with zeros. With no padding, a 5 ms
@@ -239,7 +260,7 @@
   </div>
 
   <!-- ================= DEMO 2 ================= -->
-  <div class="card">
+  <div class="card" id="demo-2">
     <h2>Demo 2 — Is the gate long enough? Grow it and watch the response</h2>
     <p>This speaker has a long bass/port tail (decay time ≈ 11 ms around 68 Hz) and a floor reflection
     arriving at <b>14 ms</b>. The gate must stop before the reflection — but does the IR decay enough by
@@ -286,7 +307,7 @@
   </div>
 
   <!-- ================= DEMO 3 ================= -->
-  <div class="card">
+  <div class="card" id="demo-3">
     <h2>Demo 3 — Truncation is smoothing in frequency (the bin width was never the problem)</h2>
     <p>This system contains a tunable high-Q resonance — by default at 1 kHz with a 20 ms decay
     (Q ≈ 63), a feature only ~15 Hz wide in the true response. Longer τ means higher Q, a longer decay
@@ -357,7 +378,7 @@
   </div>
 
   <!-- ================= DEMO 4 ================= -->
-  <div class="card">
+  <div class="card" id="demo-4">
     <h2>Demo 4 — When the gate <i>is</i> too short: show the uncertainty, not a dotted line</h2>
     <p>Back to the slowly-decaying speaker of Demo 2. The reflection at 14 ms caps the usable gate. The
     family of responses obtained as the gate grows from 1 ms toward that limit is shown in grey; the
@@ -397,7 +418,7 @@
   </div>
 
   <!-- ================= DEMO 5 ================= -->
-  <div class="card">
+  <div class="card" id="demo-5">
     <h2>Demo 5 — Pick your poison: the window design space</h2>
     <p>Every gate shape faces the same trade: a <b>narrow smoothing kernel</b> (fine resolution, little
     smearing) versus <b>little ringing</b> (no sidelobes smeared beside sharp features). No window beats the
@@ -433,7 +454,7 @@
   </div>
 
   <!-- ================= EXCITATION ================= -->
-  <div class="card">
+  <div class="card" id="excitation">
     <h2>How the impulse response is obtained in the first place</h2>
     <p>Gating acts on the recovered IR, whatever produced it — and none of the excitation choices changes the
     1/T limit. But they differ in SNR and in how they fail:</p>
@@ -459,7 +480,7 @@
   </div>
 
   <!-- ================= DEMO 6 ================= -->
-  <div class="card">
+  <div class="card" id="demo-6">
     <h2>Demo 6 — Extend the gate: fit the decaying tail as a damped sinusoid</h2>
     <p>When the IR has not decayed by the time the reflection arrives, the standard advice is that you
     need a non-gating method. One such method follows directly from the building blocks above: the late tail is
@@ -530,7 +551,7 @@
   </div>
 
   <!-- ================= PLANNER ================= -->
-  <div class="card">
+  <div class="card" id="planner">
     <h2>Measurement Planner — can this be measured, in this room?</h2>
     <p>The skill the demos build up to: <b>before measuring, predict what a gated measurement can
     resolve.</b> Two numbers collide.</p>
@@ -575,7 +596,7 @@
   </div>
 
   <!-- ================= DISCUSSION ================= -->
-  <div class="card">
+  <div class="card" id="discussion">
     <h2>Strong &amp; weak points of gated measurement</h2>
     <div class="cols">
       <div>
@@ -657,7 +678,7 @@
   </div>
 
   <!-- ================= TAKEAWAYS ================= -->
-  <div class="card">
+  <div class="card" id="takeaways">
     <h2>Takeaways</h2>
     <ul class="tight">
       <li><b>Zero-pad always.</b> It costs nothing and is the only way to see the data the record already
@@ -674,15 +695,15 @@
   </div>
 
   <!-- ================= QUIZ ================= -->
-  <div class="card">
+  <div class="card" id="quiz">
     <h2>Check your understanding</h2>
     <p>Nine claims — commit to true or false <i>before</i> reading the feedback. <b id="qzscore" class="hl" style="color:var(--accent)"></b></p>
-    <div id="quiz"></div>
+    <div id="quizbox"></div>
     <div class="controls"><button id="qzreset" class="padbtn">Reset quiz</button></div>
   </div>
 
   <!-- ================= ADVANCED ================= -->
-  <div class="card">
+  <div class="card" id="advanced">
     <h2>Where to go next (advanced)</h2>
     <p>This page stops at the standard advice, but the same ideas keep going. If you want the ceiling:</p>
     <ul class="tight">
