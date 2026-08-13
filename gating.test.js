@@ -163,15 +163,15 @@ t2.value = '5'; t2.fire('input');
 t3.value = '8'; t3.fire('input');
 t4.value = '13'; t4.fire('input');
 els.get('t6').value = '40'; els.get('t6').fire('input');
-const lx = f => Math.round(48 + Math.log10(f / 20) / 3 * 838);
+const lx = f => Math.round(48 + Math.log10(f / 20) / 3 * 818);
 dragTo(els.get('c3'), els.get('t3'), lx(125), lx(100), 'demo3 1/T line 8 \u2192 10 ms');
 dragTo(els.get('c2'), els.get('t2'), lx(200), lx(100), 'demo2 1/T line 5 \u2192 10 ms');
 dragTo(els.get('c4'), els.get('t4'), lx(1000 / 13), lx(100), 'demo4 1/Tmax line 13 \u2192 10 ms');
 dragTo(els.get('c6'), els.get('t6'), lx(25), 26, 'demo6 1/T line 40 \u2192 60 ms');
 // kernel plot: first zero sits at a quarter of the axis (x = 40..w-14)
-dragTo(els.get('c3k'), els.get('t3'), 40 + 0.25 * (900 - 54), 40 + 0.32 * (900 - 54), 'demo3 kernel zero (shorter gate)');
+dragTo(els.get('c3k'), els.get('t3'), 40 + 0.25 * (900 - 70), 40 + 0.32 * (900 - 70), 'demo3 kernel zero (shorter gate)');
 // IR plot gate edge: x(t) = 48 + t/24 * 838; t2 is at 10 ms after the c2 drag above
-dragTo(els.get('c2ir'), els.get('t2'), Math.round(48 + 10 / 24 * 838), Math.round(48 + 12 / 24 * 838), 'demo2 IR gate edge 10 \u2192 12 ms');
+dragTo(els.get('c2ir'), els.get('t2'), Math.round(48 + 10 / 24 * 818), Math.round(48 + 12 / 24 * 818), 'demo2 IR gate edge 10 \u2192 12 ms');
 // restore defaults
 t2.value = '5'; t2.fire('input');
 t3.value = '8'; t3.fire('input');

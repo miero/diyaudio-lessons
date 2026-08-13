@@ -135,7 +135,7 @@ function rafThrottle(fn) {
 
 /* --------------------------- plot helpers ---------------------------- */
 
-const ML = 48, MR = 14, MT = 10, MB = 26;
+const ML = 48, MR = 34, MT = 20, MB = 26;
 
 function sizeCanvas(cv) {
   const dpr = window.devicePixelRatio || 1, r = cv.getBoundingClientRect();
@@ -170,7 +170,7 @@ class Plot {
     c.clearRect(0, 0, w, h);
     c.font = '11px system-ui'; c.lineWidth = 1;
     const fT = [20, 50, 100, 200, 500, 1e3, 2e3, 5e3, 1e4, 2e4];
-    const fL = ['20', '50', '100', '200', '500', '1k', '2k', '5k', '10k', '20k'];
+    const fL = ['20', '50', '100', '200', '500', '1k', '2k', '5k', '10k', '20k Hz'];
     c.textAlign = 'center'; c.textBaseline = 'top';
     for (let i = 0; i < fT.length; i++) {
       const x = this.X(fT[i]);
@@ -186,6 +186,8 @@ class Plot {
       c.beginPath(); c.moveTo(ML, y); c.lineTo(w - MR, y); c.stroke();
       c.fillStyle = '#7d8899'; c.fillText(String(db), ML - 6, y);
     }
+    c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+    c.fillText('dB', ML - 6, MT - 4);
     c.strokeStyle = '#39434f';
     c.strokeRect(ML, MT, w - ML - MR, h - MT - MB);
   }
@@ -293,6 +295,8 @@ class TimePlot {
       c.beginPath(); c.moveTo(ML, y); c.lineTo(w - MR, y); c.stroke();
       c.fillStyle = '#7d8899'; c.fillText(String(db), ML - 6, y);
     }
+    c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+    c.fillText('dB', ML - 6, MT - 4);
     c.strokeStyle = '#39434f';
     c.strokeRect(ML, MT, w - ML - MR, h - MT - MB);
   }
@@ -366,7 +370,7 @@ const state0 = { sig: parseFloat(els.s0.value) }; // sigma_t in ms, from the sli
 function drawLinPlot(cv, xs, ys, { xmin, xmax, xticks, xlabels, title, color = '#4da3ff', fill = null }) {
   const { ctx: c, w, h } = sizeCanvas(cv);
   c.clearRect(0, 0, w, h);
-  const ml = 44, mr = 14, mt = 10, mb = 26;
+  const ml = 44, mr = 30, mt = 10, mb = 26;
   const X = x => ml + (x - xmin) / (xmax - xmin) * (w - ml - mr);
   const Y = y => mt + (1 - y) * (h - mt - mb); // amplitude 0..1
   c.font = '11px system-ui'; c.lineWidth = 1;
@@ -471,7 +475,7 @@ function drawDStime() {
   const x = dampedSinusoid(f, tauMs, 1, dur);
   const { ctx: c, w, h } = sizeCanvas(els.dsAt);
   c.clearRect(0, 0, w, h);
-  const ml = 44, mr = 14, mt = 12, mb = 24;
+  const ml = 44, mr = 30, mt = 12, mb = 24;
   const X = t => ml + t / dur * (w - ml - mr);
   const Y = v => mt + (1 - (v + 1.25) / 2.5) * (h - mt - mb);
   c.font = '11px system-ui'; c.lineWidth = 1;
@@ -481,7 +485,8 @@ function drawDStime() {
     const px = X(t / 1000);
     c.strokeStyle = '#232c38';
     c.beginPath(); c.moveTo(px, mt); c.lineTo(px, h - mb); c.stroke();
-    c.fillStyle = '#7d8899'; c.fillText(String(Math.round(t * 10) / 10), px, h - mb + 5);
+    c.fillStyle = '#7d8899';
+    c.fillText((Math.round(t * 10) / 10) + (dur * 1000 - t < tst ? ' ms' : ''), px, h - mb + 5);
   }
   c.textAlign = 'right'; c.textBaseline = 'middle';
   for (const v of [-1, -0.5, 0, 0.5, 1]) {
@@ -546,7 +551,7 @@ function drawDSspec() {
 
   const { ctx: c, w, h } = sizeCanvas(els.dsAs);
   c.clearRect(0, 0, w, h);
-  const ml = 44, mr = 14, mt = 12, mb = 24;
+  const ml = 44, mr = 30, mt = 18, mb = 24;
   const X = fq => ml + (fq - fmin) / (fmax - fmin) * (w - ml - mr);
   const Y = v => mt + (1 - (v + 60) / 60) * (h - mt - mb);
   c.font = '11px system-ui'; c.lineWidth = 1;
@@ -556,8 +561,11 @@ function drawDSspec() {
     const px = X(fq);
     c.strokeStyle = '#232c38';
     c.beginPath(); c.moveTo(px, mt); c.lineTo(px, h - mb); c.stroke();
-    c.fillStyle = '#7d8899'; c.fillText(fq >= 1000 ? (fq / 1000).toFixed(1) + 'k' : String(Math.round(fq)), px, h - mb + 5);
+    c.fillStyle = '#7d8899';
+    c.fillText((fq >= 1000 ? (fq / 1000).toFixed(1) + 'k' : String(Math.round(fq))) + (fmax - fq < fst ? ' Hz' : ''), px, h - mb + 5);
   }
+  c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillText('dB', ml - 5, mt - 6);
   c.textAlign = 'right'; c.textBaseline = 'middle';
   for (let v = 0; v >= -60; v -= 20) {
     c.strokeStyle = '#232c38';
@@ -695,7 +703,7 @@ function drawPartB() {
   {
     const { ctx: c, w, h } = sizeCanvas(els.dsBt);
     c.clearRect(0, 0, w, h);
-    const ml = 44, mr = 14, mt = 12, mb = 24;
+    const ml = 44, mr = 30, mt = 18, mb = 24;
     const tmaxMs = DS_WIN * 1000;
     const X = t => ml + t / tmaxMs * (w - ml - mr);
     const Y = db => mt + (1 - (db + 80) / 85) * (h - mt - mb);
@@ -713,6 +721,8 @@ function drawPartB() {
       c.beginPath(); c.moveTo(ml, Y(db)); c.lineTo(w - mr, Y(db)); c.stroke();
       c.fillStyle = '#7d8899'; c.fillText(String(db), ml - 5, Y(db));
     }
+    c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+    c.fillText('dB', ml - 5, mt - 6);
     c.strokeStyle = '#39434f'; c.strokeRect(ml, mt, w - ml - mr, h - mt - mb);
     c.save();
     c.beginPath(); c.rect(ml, mt, w - ml - mr, h - mt - mb); c.clip();
@@ -994,7 +1004,7 @@ function drawKernel(Tms, wtype, f0, tauMs) {
   for (let i = 0; i < M; i++) fr[i] = i * fmax / (M - 1);
   const db = spectrumDb(win, fr);
   const off = 20 * Math.log10(dc);
-  const ml = 40, mr = 14, mt = 20, mb = 22;
+  const ml = 40, mr = 30, mt = 20, mb = 22;
   const X = f => ml + (f / fmax) * (w - ml - mr);
   const Y = v => mt + (1 - (v + 60) / 63) * (h - mt - mb); // +3 .. -60 dB
   c.font = '11px system-ui';
@@ -1004,13 +1014,15 @@ function drawKernel(Tms, wtype, f0, tauMs) {
     c.beginPath(); c.moveTo(ml, Y(v)); c.lineTo(w - mr, Y(v)); c.stroke();
     c.fillStyle = '#7d8899'; c.fillText(String(v), ml - 5, Y(v));
   }
+  c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillText('dB', ml - 5, mt - 6);
   const st = niceStep(fmax / 5);
   c.textAlign = 'center'; c.textBaseline = 'top';
   for (let f = 0; f <= fmax + 1e-9; f += st) {
     c.strokeStyle = '#232c38';
     c.beginPath(); c.moveTo(X(f), mt); c.lineTo(X(f), h - mb); c.stroke();
     c.fillStyle = '#7d8899';
-    c.fillText(f >= 1000 ? (f / 1000) + 'k' : String(Math.round(f)), X(f), h - mb + 5);
+    c.fillText((f >= 1000 ? (f / 1000) + 'k' : String(Math.round(f))) + (fmax - f < st ? ' Hz' : ''), X(f), h - mb + 5);
   }
   c.strokeStyle = '#39434f'; c.strokeRect(ml, mt, w - ml - mr, h - mt - mb);
   c.save();
@@ -1185,7 +1197,7 @@ function drawDemo5() {
   {
     const { ctx: c, w, h } = sizeCanvas(els.c5w);
     c.clearRect(0, 0, w, h);
-    const ml = 44, mr = 14, mt = 10, mb = 24;
+    const ml = 44, mr = 30, mt = 10, mb = 24;
     const N = Math.max(2, Math.round(T5 * 1e-3 * FS));
     const X = n => ml + n / (N - 1) * (w - ml - mr);
     const Y = v => mt + (1 - v) * (h - mt - mb);
@@ -1224,7 +1236,7 @@ function drawDemo5() {
   {
     const { ctx: c, w, h } = sizeCanvas(els.c5s);
     c.clearRect(0, 0, w, h);
-    const ml = 44, mr = 14, mt = 10, mb = 24;
+    const ml = 44, mr = 30, mt = 18, mb = 24;
     const X = ft => ml + ft / 5 * (w - ml - mr);
     const Y = db => mt + (1 - (db + 120) / 120) * (h - mt - mb);
     c.font = '11px system-ui'; c.lineWidth = 1;
@@ -1233,8 +1245,10 @@ function drawDemo5() {
       const x = X(ft);
       c.strokeStyle = '#232c38';
       c.beginPath(); c.moveTo(x, mt); c.lineTo(x, h - mb); c.stroke();
-      c.fillStyle = '#7d8899'; c.fillText(ft === 1 ? '1 (=1/T)' : String(ft), x, h - mb + 5);
+      c.fillStyle = '#7d8899'; c.fillText(ft === 1 ? '1 (=1/T)' : ft === 5 ? '5 (f\u00b7T)' : String(ft), x, h - mb + 5);
     }
+    c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+    c.fillText('dB', ml - 5, mt - 6);
     c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let db = 0; db >= -120; db -= 20) {
       c.strokeStyle = '#232c38';
@@ -1431,7 +1445,7 @@ function drawDemo6Fit() {
   {
     const { ctx: c, w, h } = sizeCanvas(els.d6t);
     c.clearRect(0, 0, w, h);
-    const ml = 44, mr = 14, mt = 12, mb = 24;
+    const ml = 44, mr = 30, mt = 12, mb = 24;
     const tmaxMs = 18;
     const X = tm => ml + tm / tmaxMs * (w - ml - mr);
     const Y = v => mt + (1 - (v + 1.15) / 2.3) * (h - mt - mb);
@@ -1494,7 +1508,7 @@ function drawDemo6Fit() {
   {
     const { ctx: c, w, h } = sizeCanvas(els.d6s);
     c.clearRect(0, 0, w, h);
-    const ml = 44, mr = 14, mt = 12, mb = 24;
+    const ml = 44, mr = 30, mt = 18, mb = 24;
     const X = f => ml + (f - 20) / (300 - 20) * (w - ml - mr);
     const Y = db => mt + (1 - (db + 60) / 60) * (h - mt - mb);
     c.font = '11px system-ui'; c.lineWidth = 1;
@@ -1503,8 +1517,10 @@ function drawDemo6Fit() {
       const px = X(f);
       c.strokeStyle = '#232c38';
       c.beginPath(); c.moveTo(px, mt); c.lineTo(px, h - mb); c.stroke();
-      c.fillStyle = '#7d8899'; c.fillText(String(f), px, h - mb + 5);
+      c.fillStyle = '#7d8899'; c.fillText(f === 300 ? f + ' Hz' : String(f), px, h - mb + 5);
     }
+    c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+    c.fillText('dB', ml - 5, mt - 6);
     c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let db = 0; db >= -60; db -= 20) {
       c.strokeStyle = '#232c38';
@@ -1584,7 +1600,7 @@ const DB_PER_TAU = 20 / Math.log(10); // 8.686 dB of amplitude decay per tau
 function drawPlannerDecay(tau, Tneed, Tallow, dBtarget) {
   const { ctx: c, w, h } = sizeCanvas(els.cp1);
   c.clearRect(0, 0, w, h);
-  const ml = 44, mr = 14, mt = 10, mb = 26;
+  const ml = 44, mr = 30, mt = 18, mb = 26;
   const tmax = Math.max(Tneed, Tallow) * 1.12 + 1e-9;
   const ymin = -(dBtarget + 8);
   const X = t => ml + t / tmax * (w - ml - mr);
@@ -1597,9 +1613,12 @@ function drawPlannerDecay(tau, Tneed, Tallow, dBtarget) {
     c.strokeStyle = '#232c38';
     c.beginPath(); c.moveTo(x, mt); c.lineTo(x, h - mb); c.stroke();
     c.fillStyle = '#7d8899';
-    c.fillText(t >= 1000 ? (t / 1000).toFixed(1) + ' s' : String(Math.round(t)), x, h - mb + 6);
+    c.fillText(t >= 1000 ? (t / 1000).toFixed(1) + ' s'
+      : String(Math.round(t)) + (tmax - t < st ? ' ms' : ''), x, h - mb + 6);
   }
   c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.fillStyle = '#7d8899'; c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillText('dB', ml - 5, mt - 6);
   const yst = dBtarget > 45 ? 20 : 10;
   for (let db = 0; db >= ymin; db -= yst) {
     const y = Y(db);
@@ -1640,14 +1659,14 @@ function drawPlannerDecay(tau, Tneed, Tallow, dBtarget) {
 function drawPlannerQ(kNeed, Tallow, f0, Q) {
   const { ctx: c, w, h } = sizeCanvas(els.cp2);
   c.clearRect(0, 0, w, h);
-  const ml = 44, mr = 14, mt = 10, mb = 26;
+  const ml = 44, mr = 30, mt = 10, mb = 26;
   const fmin = 20, fmax = 4000, qmax = 30;
   const X = f => ml + Math.log10(f / fmin) / Math.log10(fmax / fmin) * (w - ml - mr);
   const Y = q => mt + (1 - q / qmax) * (h - mt - mb);
   c.font = '11px system-ui'; c.lineWidth = 1;
   c.textAlign = 'center'; c.textBaseline = 'top';
   const fT = [20, 50, 100, 200, 500, 1000, 2000, 4000];
-  const fL = ['20', '50', '100', '200', '500', '1k', '2k', '4k'];
+  const fL = ['20', '50', '100', '200', '500', '1k', '2k', '4k Hz'];
   for (let i = 0; i < fT.length; i++) {
     const x = X(fT[i]);
     c.strokeStyle = '#232c38';
@@ -2014,9 +2033,9 @@ makeDraggable(els.c3, () => plots.d3.X(1000 / state3.T), x => {
   dragSet(els.t3, els.t3v, v => v + ' ms', 1000 / plots.d3.freqAt(x),
     v => { state3.T = v; throttled3(); });
 });
-makeDraggable(els.c3k, () => 40 + 0.25 * (els.c3k.getBoundingClientRect().width - 54), x => {
+makeDraggable(els.c3k, () => 40 + 0.25 * (els.c3k.getBoundingClientRect().width - 70), x => {
   const w = els.c3k.getBoundingClientRect().width;
-  const f = Math.max(1e-6, (x - 40) / (w - 54) * (4000 / state3.T));
+  const f = Math.max(1e-6, (x - 40) / (w - 70) * (4000 / state3.T));
   dragSet(els.t3, els.t3v, v => v + ' ms', 1000 / f,
     v => { state3.T = v; throttled3(); });
 });
