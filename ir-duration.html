@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A 1 ms impulse response has no hard lowest frequency — what duration and sample rate really set</title>
+<style>
+  :root {
+    --bg:#0e1116; --panel:#161b22; --panel2:#1b212b; --line:#2a3340;
+    --text:#dde4ee; --muted:#8d99ab; --accent:#4da3ff; --accent2:#ff9f43;
+    --ok:#3ecf8e; --warn:#ff6b6b;
+  }
+  * { box-sizing:border-box }
+  html { scroll-behavior:smooth }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif }
+  .wrap { max-width:1000px; margin:0 auto; padding:28px 18px 80px }
+  h1 { margin:0 0 6px; font-size:clamp(24px,4vw,30px); line-height:1.25 }
+  h2 { margin:0 0 8px; font-size:20px }
+  h3 { margin:18px 0 6px; color:var(--accent2); font-size:15px }
+  p { margin:8px 0 }
+  a { color:var(--accent) }
+  button,input,select { font:inherit }
+  button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible {
+    outline:2px solid var(--accent); outline-offset:2px }
+  .sub,.note { color:var(--muted) }
+  .note { font-size:13.5px }
+  .eyebrow { margin:0 0 5px; color:var(--accent2); font-size:12px; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase }
+  .card { margin:22px 0; padding:18px 20px; scroll-margin-top:12px;
+    border:1px solid var(--line); border-radius:12px; background:var(--panel) }
+  .toc { display:flex; flex-wrap:wrap; gap:4px 14px; margin:12px 0 4px; font-size:12.5px }
+  .toc a { text-decoration:none }
+  .toc a:hover { text-decoration:underline }
+  .claims { margin:8px 0; padding-left:22px }
+  .claims li { margin:8px 0 }
+  .formula { margin:12px 0; padding:10px 16px; border:1px solid var(--line);
+    border-radius:8px; background:#101720; color:var(--accent2); text-align:center;
+    font:15px/1.7 ui-monospace,Consolas,monospace }
+  .controls { display:flex; flex-direction:column; gap:8px; margin:14px 0 }
+  .ctl { display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+  .ctl label { min-width:170px; color:var(--muted); font-size:13px }
+  .ctl fieldset { display:contents }
+  input[type=range] { width:min(280px,100%); accent-color:var(--accent) }
+  select { padding:5px 9px; border:1px solid var(--line); border-radius:7px;
+    background:var(--panel2); color:var(--text) }
+  output { min-width:90px; font-size:13px; font-weight:700 }
+  .resonance-controls { display:flex; flex-direction:column; gap:8px; margin:0; padding:0;
+    border:0; min-width:0 }
+  .resonance-controls[disabled] { opacity:.48 }
+  .padbtn { padding:6px 12px; border:1px solid var(--line); border-radius:8px;
+    background:var(--panel2); color:var(--text); cursor:pointer }
+  .padbtn:hover { border-color:var(--accent) }
+  .padbtn.qgood { border-color:var(--ok); background:#1d4b38; color:#d2ffe9 }
+  .padbtn.qbad { border-color:var(--warn); background:#4b2326; color:#ffd7d7 }
+  .plots { display:grid; grid-template-columns:1fr; gap:10px }
+  .plotbox { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--panel2) }
+  .plottitle { padding:7px 12px 3px; color:#93a0b4; font-size:12px }
+  canvas { display:block; width:100%; height:270px; background:transparent }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; margin:8px 0; color:var(--muted); font-size:12.5px }
+  .legend span { display:inline-flex; align-items:center; gap:5px }
+  .swatch { display:inline-block; width:12px; height:12px; border-radius:3px }
+  .readout { margin-top:12px; padding:10px 14px; border:1px solid var(--line);
+    border-left:3px solid var(--accent); border-radius:8px; background:#101720;
+    color:#c9d4e3; font-size:13.5px }
+  .readout b { color:var(--text) }
+  .readout .ok { color:var(--ok) }
+  .readout .warn { color:var(--warn) }
+  .readout .hl { color:var(--accent2) }
+  .predict { margin:12px 0; padding:10px 14px; border:1px dashed var(--accent);
+    border-radius:8px; background:#101720 }
+  .ptitle { margin-bottom:8px; color:var(--accent); font-size:13px; font-weight:600 }
+  .button-row { display:flex; flex-wrap:wrap; gap:8px }
+  .feedback { display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);
+    color:#c9d4e3; font-size:13.5px }
+  .qz { margin:10px 0; padding:12px 14px; border:1px solid var(--line);
+    border-radius:8px; background:var(--panel2) }
+  .qtext { margin-bottom:8px }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:18px }
+  .take-list li { margin:6px 0 }
+  table { width:100%; margin:12px 0; border-collapse:collapse; font-size:13.5px }
+  th,td { padding:8px 10px; border:1px solid var(--line); text-align:left; vertical-align:top }
+  th { background:var(--panel2); color:var(--accent) }
+  .correction { margin:12px 0; padding:10px 14px; border:1px solid #4a3236;
+    border-left:3px solid var(--warn); border-radius:8px; background:#1c1416 }
+  .correction b { color:var(--ok) }
+  .hlink { display:inline-block; margin-left:8px; color:var(--muted); opacity:.45;
+    text-decoration:none; vertical-align:middle; position:relative }
+  h2:hover .hlink,.hlink:focus { color:var(--accent); opacity:1 }
+  .hlink svg { display:block; width:15px; height:15px }
+  .hlink.copied::after { content:"link copied"; position:absolute; top:130%; left:50%;
+    z-index:2; padding:2px 8px; transform:translateX(-50%); border:1px solid var(--line);
+    border-radius:6px; background:#101720; color:var(--ok); font-size:11px; white-space:nowrap }
+  footer { margin-top:40px; padding-top:14px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:12.5px }
+  @media (max-width:760px) {
+    .cols { grid-template-columns:1fr }
+    .ctl { align-items:flex-start; flex-direction:column; gap:4px }
+    .ctl label { min-width:0 }
+    canvas { height:250px }
+  }
+  @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 16 16">
+    <path fill="currentColor" d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0z"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Interactive audio lesson</p>
+    <h1>A 1 ms impulse response has <span style="color:var(--accent)">no hard lowest frequency</span></h1>
+    <p class="sub">A short record has coarse unpadded DFT bins and may cut off a slow resonance, but neither
+      fact creates a frequency below which its transform ceases to exist. Use the same 1 ms / 48 kHz record
+      first as a single-tap impulse, then as a truncated damped resonance, to separate what duration
+      <i>T</i> sets from what sample rate <i>F<sub>s</sub></i> sets.</p>
+    <nav class="toc" aria-label="Lesson chapters">
+      <a href="#idea">The precise claim</a>
+      <a href="#demo-1">Interactive evidence</a>
+      <a href="#takeaways">Bounds and takeaways</a>
+      <a href="#quiz">Quiz</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card" id="idea">
+      <h2>The precise claim<a class="hlink" href="#idea" aria-label="Copy link to the precise claim chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <ol class="claims">
+        <li><b>Finite duration is not a low-frequency cutoff.</b> For the single-tap impulse
+          <code>h[n] = δ[n]</code>, the discrete-time Fourier transform is
+          <code>H(e<sup>jω</sup>) = 1</code> at every frequency, including DC.</li>
+        <li><b>Duration T sets spacing and a characteristic detail scale.</b> An unpadded N-point DFT samples
+          the continuous DTFT every <code>F<sub>s</sub>/N = 1/T</code> Hz. If a nonzero tail is cut at T,
+          the rectangular truncation kernel also has characteristic width about 1/T. Zero-padding fills in
+          the DTFT between bins; it does not restore an omitted tail.</li>
+        <li><b>Sample rate F<sub>s</sub> sets Nyquist and sample count.</b> At fixed T,
+          <code>N = F<sub>s</sub>T</code> and Nyquist is <code>F<sub>s</sub>/2</code>. Raising F<sub>s</sub>
+          gives more samples and higher bandwidth, but does not change 1/T or contain a decay sooner.</li>
+      </ol>
+      <div class="correction"><b>Correction to a common shortcut:</b> “a T-second IR cannot encode below
+        1/T” confuses DFT sample spacing or truncation blur with a hard frequency boundary. A finite sequence
+        has a continuous, periodic DTFT. The meaningful question for a resonance is whether its omitted tail
+        is small enough for a stated criterion.</div>
+    </section>
+
+    <section class="card" id="demo-1">
+      <h2>Interactive evidence — same record length, two very different tails<a class="hlink" href="#demo-1" aria-label="Copy link to interactive evidence"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <p>Switch examples without changing T or F<sub>s</sub>. The blue frequency curve is the continuous DTFT
+        of the finite N-sample record; white dots are only its unpadded DFT samples. For the resonance, the
+        dashed curve is the infinite, untruncated model, and <b>both curves use its level at f<sub>0</sub> as
+        one common 0 dB reference</b>. Their vertical difference therefore shows truncation error directly,
+        without arbitrary DTFT-sum or sample-rate scaling. The impulse remains exactly 0 dB. At the defaults
+        the 1 ms gate ends while the resonance envelope is still large.</p>
+
+      <div class="controls">
+        <div class="ctl">
+          <label for="exampleType">Example</label>
+          <select id="exampleType">
+            <option value="impulse">single-sample impulse</option>
+            <option value="resonance" selected>damped resonance</option>
+          </select>
+        </div>
+        <div class="ctl">
+          <label for="durationMs">Record duration T</label>
+          <input type="range" id="durationMs" min="0.25" max="20" step="0.25" value="1">
+          <output id="durationValue" for="durationMs">1.00 ms</output>
+        </div>
+        <div class="ctl">
+          <label for="sampleRate">Sample rate F<sub>s</sub></label>
+          <select id="sampleRate">
+            <option value="24000">24 kHz</option>
+            <option value="48000" selected>48 kHz</option>
+            <option value="96000">96 kHz</option>
+          </select>
+        </div>
+        <fieldset class="resonance-controls" id="resonanceControls">
+          <legend class="note">Damped-resonance parameters</legend>
+          <div class="ctl">
+            <label for="f0Hz">Resonance frequency f<sub>0</sub></label>
+            <input type="range" id="f0Hz" min="20" max="24000" step="10" value="1000">
+            <output id="f0Value" for="f0Hz">1 kHz</output>
+          </div>
+          <div class="ctl">
+            <label for="qualityFactor">Quality factor Q</label>
+            <input type="range" id="qualityFactor" min="0.1" max="100" step="0.1" value="10">
+            <output id="qualityValue" for="qualityFactor">10.0</output>
+          </div>
+          <div class="ctl">
+            <label for="targetDb">Contain amplitude by T</label>
+            <select id="targetDb">
+              <option value="-20">−20 dB</option>
+              <option value="-40" selected>−40 dB</option>
+              <option value="-60">−60 dB</option>
+            </select>
+          </div>
+        </fieldset>
+        <div class="ctl"><button type="button" class="padbtn" id="demoReset">Reset defaults</button></div>
+      </div>
+
+      <div class="predict">
+        <div class="ptitle">Predict first: keep T fixed and change F<sub>s</sub> from 48 to 96 kHz. What changes?</div>
+        <div class="button-row" id="predictionOptions" role="group" aria-label="Prediction choices"></div>
+        <div class="feedback" id="predictionWhy" role="status"></div>
+      </div>
+
+      <div class="plots">
+        <div class="plotbox">
+          <div class="plottitle">Time evidence — samples kept through T, and any tail that would continue</div>
+          <canvas id="timeCanvas" aria-label="Finite impulse response and untruncated time response" aria-describedby="demoReadout">
+            Your browser does not support canvas. The text readout below gives the sample count and tail containment result.
+          </canvas>
+        </div>
+        <div class="plotbox">
+          <div class="plottitle">Frequency evidence — dB relative to full model at f₀ (0 dB); impulse remains 0 dB</div>
+          <canvas id="frequencyCanvas" aria-label="Finite and full frequency responses from DC to Nyquist" aria-describedby="demoReadout">
+            Your browser does not support canvas. The text readout below gives the DC result, DFT spacing, and Nyquist limit.
+          </canvas>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i class="swatch" style="background:#4da3ff"></i> finite N-sample record / continuous DTFT</span>
+        <span><i class="swatch" style="background:#e8edf4"></i> full response (0 dB at f₀) / unpadded DFT samples</span>
+        <span><i class="swatch" style="background:#ff9f43"></i> f<sub>0</sub>, envelope, or gate edge</span>
+        <span><i class="swatch" style="background:#e05c5c"></i> omitted time region / ~1/T detail band</span>
+        <span><i class="swatch" style="background:#3ecf8e"></i> selected decay target reached</span>
+      </div>
+      <div class="readout" id="demoReadout" role="status" aria-live="polite"></div>
+      <p class="note">Try the single-sample impulse at 1 ms: its line remains exactly 0 dB from DC to
+        Nyquist even though the DFT dots are 1 kHz apart. Then return to the resonance and raise T until the
+        chosen decay target is met. Raising only F<sub>s</sub> adds samples and bandwidth, not decay time.</p>
+    </section>
+
+    <section class="card" id="takeaways">
+      <h2>Bounds and takeaways<a class="hlink" href="#takeaways" aria-label="Copy link to bounds and takeaways"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <h3>The damped-resonance criterion</h3>
+      <p>For the model used in the demo, with amplitude envelope measured relative to its value at n = 0,</p>
+      <div class="formula">
+        h[n] = e<sup>−n/(F<sub>s</sub>τ)</sup> cos(2πf<sub>0</sub>n/F<sub>s</sub>) &nbsp;;&nbsp;
+        τ = Q/(πf<sub>0</sub>)<br>
+        ε = 10<sup>(target dB)/20</sup> &nbsp;;&nbsp;
+        T ≥ τ ln(1/ε) &nbsp;⇔&nbsp; Q ≤ πf<sub>0</sub>T / ln(1/ε)
+      </div>
+      <p>For fixed Q the same condition can be written
+        <code>f<sub>0</sub> ≥ Q ln(1/ε)/(πT)</code>. This is a <b>containment bound for a chosen amplitude
+        target</b>, not a universal minimum frequency or universal maximum/minimum Q. Change −20 dB to
+        −60 dB and the bound changes. A noise floor, acceptable spectral error, or energy criterion would
+        produce a different bound.</p>
+
+      <h3>Explicit parameter bounds — representation is not estimation</h3>
+      <table>
+        <tr><th>Parameter</th><th>Representation/model domain</th><th>Criterion or estimation rule</th></tr>
+        <tr>
+          <td><b>f<sub>0</sub></b></td>
+          <td>For a real sampled cosine, <code>0 ≤ f<sub>0</sub> ≤ F<sub>s</sub>/2</code>; the upper bound is Nyquist.
+            Duration T does not add a positive lower bound.</td>
+          <td>An identification method may choose <i>k</i> samples per cycle, giving
+            <code>f<sub>0</sub> ≤ F<sub>s</sub>/k</code>. The choice of <i>k</i> is a practical robustness rule,
+            not a digital representation law.</td>
+        </tr>
+        <tr>
+          <td><b>τ</b></td>
+          <td><code>τ &gt; 0</code>, with <b>no positive storage lower bound</b>: as τ becomes very short, later
+            samples simply approach zero and the sequence approaches one nonzero tap.</td>
+          <td>Containment to amplitude ε requires <code>τ ≤ T/ln(1/ε)</code>. If an estimator demands
+            <i>m</i> samples per time constant, <code>τ ≥ m/F<sub>s</sub></code> is a user-chosen estimation
+            robustness rule, not a representation law.</td>
+        </tr>
+        <tr>
+          <td><b>Q</b></td>
+          <td>For f<sub>0</sub> &gt; 0, Q can approach zero from above in this damped-cosine parameterization;
+            there is <b>no universal positive lower bound</b>.</td>
+          <td>Containment gives <code>Q ≤ πf<sub>0</sub>T/ln(1/ε)</code>. This upper bound changes with
+            f<sub>0</sub>, T, and the chosen ε.</td>
+        </tr>
+      </table>
+      <p class="note">This lesson uses <code>Q = πf<sub>0</sub>τ</code> as its ringiness convention. It is
+        the standard physical second-order relation in the <b>lightly damped approximation</b>; at very low Q,
+        the exact natural frequency, damped frequency, damping ratio, and physical second-order use of “Q”
+        need more care. The envelope and containment equations above remain the definitions of this lesson’s
+        damped-cosine model. Rules such as a fixed number of samples per cycle or time constant are therefore
+        declared estimation choices—not hard limits such as an arbitrary F<sub>s</sub>/4 cutoff.</p>
+
+      <table>
+        <tr><th>Question</th><th>What determines it?</th><th>Meaning at 1 ms / 48 kHz</th></tr>
+        <tr><td>How many stored samples?</td><td>N = F<sub>s</sub>T</td><td>48 samples</td></tr>
+        <tr><td>Highest non-aliased frequency?</td><td>Nyquist = F<sub>s</sub>/2</td><td>24 kHz</td></tr>
+        <tr><td>Unpadded DFT spacing?</td><td>F<sub>s</sub>/N = 1/T</td><td>1 kHz between DFT samples</td></tr>
+        <tr><td>Hard lowest transform frequency?</td><td>None; the DTFT includes DC</td><td>A single tap is exactly flat at and below 1 kHz</td></tr>
+        <tr><td>Is a resonance tail contained?</td><td>f<sub>0</sub>, Q, T, and the chosen ε</td><td>Calculate it; T alone cannot answer</td></tr>
+      </table>
+
+      <div class="cols">
+        <div>
+          <h3>What duration T does tell you</h3>
+          <ul class="take-list">
+            <li>The exact unpadded DFT sample spacing, about 1/T.</li>
+            <li>The characteristic spectral-detail and rectangular-truncation scale, about 1/T.</li>
+            <li>How far a physical decay has been observed, and therefore whether a stated tail criterion is met.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What it does not tell you</h3>
+          <ul class="take-list">
+            <li>It does not create a brick-wall lower frequency limit.</li>
+            <li>It does not say a short record is wrong when the true IR is already zero; the one-tap impulse is the clean counterexample.</li>
+            <li>It does not define a universal Q bound without f<sub>0</sub> and a decay/error criterion.</li>
+          </ul>
+        </div>
+      </div>
+      <p class="note">The resonance curves are an exact discrete-time model. Real measurements add noise,
+        reflections, windows, multiple modes, and uncertainty about when “small enough” has been reached.
+        Test convergence with longer records whenever possible.</p>
+    </section>
+
+    <section class="card" id="quiz">
+      <h2>Check your understanding<a class="hlink" href="#quiz" aria-label="Copy link to quiz"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <p>Commit to true or false before reading the feedback.
+        <b id="quizScore" style="color:var(--accent)" aria-live="polite"></b></p>
+      <div id="quizBox"></div>
+      <div class="controls"><button type="button" id="quizReset" class="padbtn">Reset quiz</button></div>
+    </section>
+  </main>
+
+  <footer>Source and correction prompt: <a href="https://claude.ai/share/78a940c2-4381-49ef-b768-8f41dcfb4a7b">shared Claude discussion</a>.
+    Related: <a href="gating.html">gating, windows, and the 1/T scale</a>. Model and plots are generated locally in the browser; no audio is uploaded.
+    <a href="#">Back to top</a></footer>
+</div>
+
+<noscript><p style="color:#ff6b6b;text-align:center">This interactive lesson requires JavaScript.</p></noscript>
+<script src="ir-duration.js"></script>
+</body>
+</html>
