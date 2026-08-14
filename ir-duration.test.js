@@ -48,7 +48,7 @@ test('published lesson keeps semantic chapters and accessible non-canvas output'
   }
   assert.match(html, /<main>/);
   assert.equal((html.match(/\bid=["']demo-\d+["']/g) || []).length, 1, 'expected one central demo');
-  assert.ok((html.match(/<canvas[^>]+aria-label=/g) || []).length >= 2, 'both plots need canvas labels');
+  assert.ok((html.match(/<canvas[^>]+aria-label=/g) || []).length >= 4, 'all four plots need canvas labels');
   assert.match(html, /id=["']demoReadout["'][^>]+aria-live=["']polite["']/);
   assert.match(html, /<noscript>/);
   assert.doesNotMatch(html, /author-note|author-checklist|Author TODO|TEMPLATE:/i);
@@ -59,7 +59,13 @@ test('lesson states the correction and links its source discussion', () => {
   assert.match(html, /H\(e<sup>jω<\/sup>\) = 1/);
   assert.match(html, /characteristic spectral-detail and rectangular-truncation scale/i);
   assert.match(html, /both curves use its level at f<sub>0<\/sub> as\s+one common 0 dB reference/i);
+  assert.match(html, /Guided scenarios/);
+  assert.match(html, /id=["']scenarioPresets["'][^>]+role=["']group["']/);
   assert.match(html, /Frequency evidence — dB relative to full model at f₀ \(0 dB\)/);
+  assert.match(html, /Containment map — Q<sub>max<\/sub>\(f<sub>0<\/sub>\)/);
+  assert.match(html, /Gate-length convergence — envelope remaining at T versus finite\/full level error at f₀/);
+  assert.match(html, /criterion map, not a hard\s+minimum-frequency chart/i);
+  assert.match(html, /tail containment and spectral\s+accuracy are related—not identical—criteria/i);
   assert.match(html, /https:\/\/claude\.ai\/share\/78a940c2-4381-49ef-b768-8f41dcfb4a7b/);
 });
 
@@ -74,6 +80,23 @@ test('parameter bounds separate representation, containment, and estimation rule
 });
 
 /* ----------------------- headline mathematics ---------------------- */
+
+test('guided scenarios encode the four intended comparisons', () => {
+  assert.deepEqual(lesson.SCENARIO_PRESETS.map(preset => preset.id), [
+    'impulse-counterexample', 'truncated-default', 'just-contained', 'double-sample-rate',
+  ]);
+  const [impulse, truncated, contained, doubled] = lesson.SCENARIO_PRESETS;
+  assert.equal(impulse.state.example, 'impulse');
+  assert.deepEqual(truncated.state, lesson.DEFAULT_STATE);
+  assert.equal(lesson.calculateLesson(contained.state).contained, true);
+  assert.equal(contained.state.f0Hz, truncated.state.f0Hz);
+  assert.equal(contained.state.qualityFactor, truncated.state.qualityFactor);
+  assert.equal(doubled.state.durationMs, truncated.state.durationMs);
+  assert.equal(doubled.state.sampleRate, 2 * truncated.state.sampleRate);
+  nearlyEqual(lesson.calculateLesson(doubled.state).residualDb,
+    lesson.calculateLesson(truncated.state).residualDb, 1e-14,
+    'doubling Fs preset leaves decay containment unchanged');
+});
 
 test('headline tau, required duration, Q bound, and frequency bound are correct', () => {
   const f0 = 1000;
@@ -114,6 +137,63 @@ test('containment boundary is criterion-dependent and includes equality', () => 
   assert.equal(justOutside.contained, false);
   assert.ok(lesson.maxContainedQ(durationSeconds, f0, -20) > qBoundary);
   assert.ok(lesson.maxContainedQ(durationSeconds, f0, -60) < qBoundary);
+});
+
+test('containment map encodes target-dependent Q bounds and the Nyquist edge', () => {
+  const result = lesson.calculateLesson(lesson.DEFAULT_STATE);
+  const map = lesson.containmentMapData(result, 41);
+  assert.equal(map.frequencies.length, 41);
+  nearlyEqual(map.frequencies[0], 20, 1e-12, 'map lower display frequency');
+  nearlyEqual(map.frequencies[40], result.nyquistHz, 1e-9, 'map ends at Nyquist');
+  assert.equal(map.selectedTargetDb, -40);
+  assert.deepEqual(map.curves.map(curve => curve.targetDb), [-20, -40, -60]);
+  const last = map.curves.map(curve => curve.qMax[40]);
+  assert.ok(last[0] > last[1] && last[1] > last[2], 'looser target permits larger Q');
+  nearlyEqual(map.current.qBoundary, result.qMax, 1e-15, 'current map boundary matches readout');
+  assert.equal(map.current.contained, false);
+
+  const longer = lesson.containmentMapData(
+    lesson.calculateLesson({ ...lesson.DEFAULT_STATE, durationMs: 2 }), 41);
+  nearlyEqual(longer.selectedCurve.qMax[20], 2 * map.selectedCurve.qMax[20], 1e-12,
+    'doubling T doubles the map Q boundary');
+});
+
+test('gate convergence distinguishes tail criterion from normalized spectral error', () => {
+  const result = lesson.calculateLesson(lesson.DEFAULT_STATE);
+  const data = lesson.gateConvergenceData(result, 80);
+  assert.equal(data.durationsMs.length, 80);
+  nearlyEqual(data.durationsMs[0], 1000 / result.sampleRate, 1e-12, 'convergence starts at one sample');
+  nearlyEqual(data.currentTailDb, result.residualDb, 1e-14, 'current tail marker');
+  nearlyEqual(data.currentSpectralErrorDb, result.truncationAtF0Db, 1e-14, 'current spectral marker');
+  assert.ok(data.tailDb[data.tailDb.length - 1] < result.targetDb,
+    'convergence range extends beyond selected tail target');
+  assert.ok(Array.from(data.spectralErrorDb).every(Number.isFinite), 'spectral convergence values are finite');
+  assert.notEqual(data.currentTailDb.toFixed(2), data.currentSpectralErrorDb.toFixed(2),
+    'tail level and spectral error are not conflated');
+
+  const impulse = lesson.calculateLesson({ example: 'impulse', durationMs: 1, sampleRate: 48000 });
+  assert.equal(lesson.containmentMapData(impulse), null);
+  const impulseData = lesson.gateConvergenceData(impulse, 24);
+  assert.ok(Array.from(impulseData.spectralErrorDb).every(value => value === 0));
+});
+
+test('canvas coordinate helpers map plot interiors to parameters and duration', () => {
+  const result = lesson.calculateLesson(lesson.DEFAULT_STATE);
+  const width = 900, height = 270;
+  const lowerLeft = lesson.containmentParametersAtCanvasPoint(result, 58, height - 34, width, height);
+  const upperRight = lesson.containmentParametersAtCanvasPoint(result, width - 34, 22, width, height);
+  nearlyEqual(lowerLeft.f0Hz, 20, 1e-12, 'containment left edge frequency');
+  nearlyEqual(lowerLeft.qualityFactor, 0.1, 1e-12, 'containment bottom edge Q');
+  nearlyEqual(upperRight.f0Hz, result.nyquistHz, 1e-9, 'containment right edge Nyquist');
+  nearlyEqual(upperRight.qualityFactor, 100, 1e-10, 'containment top edge Q');
+  assert.equal(lesson.containmentParametersAtCanvasPoint(result, 20, 20, width, height), null);
+
+  const range = lesson.gateConvergenceRange(result);
+  nearlyEqual(lesson.convergenceDurationAtCanvasPoint(result, 58, 100, width, height),
+    range.minimumDurationMs, 1e-12, 'convergence left edge');
+  nearlyEqual(lesson.convergenceDurationAtCanvasPoint(result, width - 28, 100, width, height),
+    range.maximumDurationMs, 1e-10, 'convergence right edge');
+  assert.equal(lesson.convergenceDurationAtCanvasPoint(result, width / 2, 5, width, height), null);
 });
 
 test('single-tap impulse is exactly flat, including DC and below 1/T', () => {
@@ -259,6 +339,7 @@ function makeElement(tagName = 'div', id = '') {
     },
     getContext() { return makeContext(); },
     getBoundingClientRect() { return { width: 900, height: 270, left: 0, top: 0 }; },
+    setPointerCapture() {},
   };
   Object.defineProperty(element, 'firstChild', { get() { return this.children[0] || null; } });
   return element;
@@ -266,7 +347,7 @@ function makeElement(tagName = 'div', id = '') {
 
 function makeHeadlessEnvironment() {
   const elements = new Map();
-  const canvasIds = new Set(['timeCanvas', 'frequencyCanvas']);
+  const canvasIds = new Set(['timeCanvas', 'frequencyCanvas', 'containmentCanvas', 'convergenceCanvas']);
   const selectIds = new Set(['exampleType', 'sampleRate', 'targetDb']);
   for (const id of lesson.REQUIRED_IDS) {
     const tag = canvasIds.has(id) ? 'canvas' : selectIds.has(id) ? 'select' : id === 'resonanceControls' ? 'fieldset' : 'div';
@@ -304,19 +385,85 @@ function makeHeadlessEnvironment() {
 
 /* ----------------------- browser smoke checks ----------------------- */
 
-test('lesson initializes, draws both responsive canvases, and tells the default truncation story', () => {
+test('lesson initializes, draws all responsive canvases, and tells the default truncation story', () => {
   const env = makeHeadlessEnvironment();
   const app = lesson.initLesson(env.document, env.window);
   assert.deepEqual(app.state, { ...lesson.DEFAULT_STATE });
   assert.equal(env.elements.get('timeCanvas').width, 900);
   assert.equal(env.elements.get('frequencyCanvas').height, 270);
+  assert.equal(env.elements.get('containmentCanvas').width, 900);
+  assert.equal(env.elements.get('convergenceCanvas').height, 270);
   assert.match(env.elements.get('demoReadout').innerHTML, /48 samples/);
   assert.match(env.elements.get('demoReadout').innerHTML, /Truncated/);
   assert.match(env.elements.get('demoReadout').innerHTML, /3\.183 ms/);
   assert.match(env.elements.get('demoReadout').innerHTML, /common <b>0 dB reference<\/b>/);
   assert.match(env.elements.get('demoReadout').innerHTML, /finite record is <b>-11\.39 dB<\/b>/);
+  assert.equal(app.presetButtons.length, lesson.SCENARIO_PRESETS.length);
+  assert.ok(app.presetButtons[1].classList.contains('active'));
+  assert.equal(app.presetButtons[1].getAttribute('aria-pressed'), 'true');
   assert.equal(app.predictionButtons.length, lesson.PREDICTION.options.length);
   assert.equal(app.quizView.rows.length, lesson.QUIZ.length);
+});
+
+test('guided scenario buttons apply complete states and track the active scenario', () => {
+  const env = makeHeadlessEnvironment();
+  const app = lesson.initLesson(env.document, env.window);
+
+  app.presetButtons[0].fire('click');
+  assert.equal(app.state.example, 'impulse');
+  assert.equal(env.elements.get('resonanceControls').disabled, true);
+  assert.match(env.elements.get('demoReadout').innerHTML, /at DC/);
+  assert.ok(app.presetButtons[0].classList.contains('active'));
+
+  app.presetButtons[2].fire('click');
+  assert.equal(app.state.durationMs, 14.75);
+  assert.equal(lesson.calculateLesson(app.state).contained, true);
+  assert.match(env.elements.get('demoReadout').innerHTML, /Contained/);
+  assert.ok(app.presetButtons[2].classList.contains('active'));
+
+  app.presetButtons[3].fire('click');
+  assert.equal(app.state.durationMs, 1);
+  assert.equal(app.state.sampleRate, 96000);
+  assert.match(env.elements.get('demoReadout').innerHTML, /96 samples/);
+  assert.match(env.elements.get('demoReadout').innerHTML, /Nyquist = <b>48 kHz/);
+  assert.ok(app.presetButtons[3].classList.contains('active'));
+
+  const duration = env.elements.get('durationMs');
+  duration.value = '2'; duration.fire('input');
+  assert.ok(app.presetButtons.every(button => !button.classList.contains('active')),
+    'manual edits clear preset selection');
+  env.elements.get('demoReset').fire('click');
+  assert.ok(app.presetButtons[1].classList.contains('active'));
+});
+
+test('direct graph manipulation updates f0, Q, and T through the existing controls', () => {
+  const env = makeHeadlessEnvironment();
+  const app = lesson.initLesson(env.document, env.window);
+  const width = 900, height = 270;
+  const mapWidth = width - 58 - 34;
+  const mapHeight = height - 22 - 34;
+  const mapX = 58 + Math.log(2000 / 20) / Math.log(24000 / 20) * mapWidth;
+  const mapY = 22 + (1 - Math.log(2 / 0.1) / Math.log(100 / 0.1)) * mapHeight;
+  const map = env.elements.get('containmentCanvas');
+  map.fire('pointerdown', { clientX: mapX, clientY: mapY, pointerId: 1 });
+  map.fire('pointerup', { clientX: mapX, clientY: mapY });
+  assert.equal(app.state.f0Hz, 2000);
+  assert.equal(app.state.qualityFactor, 2);
+  assert.equal(env.elements.get('f0Hz').value, '2000');
+  assert.equal(env.elements.get('qualityFactor').value, '2');
+
+  const result = lesson.calculateLesson(app.state);
+  const range = lesson.gateConvergenceRange(result);
+  const convergenceWidth = width - 58 - 28;
+  const convergenceX = 58 + Math.log(4 / range.minimumDurationMs) /
+    Math.log(range.maximumDurationMs / range.minimumDurationMs) * convergenceWidth;
+  const convergence = env.elements.get('convergenceCanvas');
+  convergence.fire('pointerdown', { clientX: convergenceX, clientY: 120, pointerId: 2 });
+  convergence.fire('pointerup', { clientX: convergenceX, clientY: 120 });
+  assert.equal(app.state.durationMs, 4);
+  assert.equal(env.elements.get('durationMs').value, '4');
+  assert.equal(env.elements.get('durationValue').textContent, '4.00 ms');
+  assert.ok(app.presetButtons.every(button => !button.classList.contains('active')));
 });
 
 test('all demo controls update state and evidence; reset restores the 1 ms / 48 kHz default', () => {

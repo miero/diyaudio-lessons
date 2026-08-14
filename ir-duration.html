@@ -39,7 +39,7 @@
     font:15px/1.7 ui-monospace,Consolas,monospace }
   .controls { display:flex; flex-direction:column; gap:8px; margin:14px 0 }
   .ctl { display:flex; align-items:center; gap:10px; flex-wrap:wrap }
-  .ctl label { min-width:170px; color:var(--muted); font-size:13px }
+  .ctl label,.ctl .ctl-label { min-width:170px; color:var(--muted); font-size:13px }
   .ctl fieldset { display:contents }
   input[type=range] { width:min(280px,100%); accent-color:var(--accent) }
   select { padding:5px 9px; border:1px solid var(--line); border-radius:7px;
@@ -51,6 +51,7 @@
   .padbtn { padding:6px 12px; border:1px solid var(--line); border-radius:8px;
     background:var(--panel2); color:var(--text); cursor:pointer }
   .padbtn:hover { border-color:var(--accent) }
+  .padbtn.active { border-color:var(--accent); background:#17395d; color:#dceeff }
   .padbtn.qgood { border-color:var(--ok); background:#1d4b38; color:#d2ffe9 }
   .padbtn.qbad { border-color:var(--warn); background:#4b2326; color:#ffd7d7 }
   .plots { display:grid; grid-template-columns:1fr; gap:10px }
@@ -96,7 +97,7 @@
   @media (max-width:760px) {
     .cols { grid-template-columns:1fr }
     .ctl { align-items:flex-start; flex-direction:column; gap:4px }
-    .ctl label { min-width:0 }
+    .ctl label,.ctl .ctl-label { min-width:0 }
     canvas { height:250px }
   }
   @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto } }
@@ -116,7 +117,8 @@
     <p class="sub">A short record has coarse unpadded DFT bins and may cut off a slow resonance, but neither
       fact creates a frequency below which its transform ceases to exist. Use the same 1 ms / 48 kHz record
       first as a single-tap impulse, then as a truncated damped resonance, to separate what duration
-      <i>T</i> sets from what sample rate <i>F<sub>s</sub></i> sets.</p>
+      <i>T</i> sets from what sample rate <i>F<sub>s</sub></i> sets. Two further views map the chosen decay
+      criterion across frequency/Q and show how the tail and spectral error converge as T grows.</p>
     <nav class="toc" aria-label="Lesson chapters">
       <a href="#idea">The precise claim</a>
       <a href="#demo-1">Interactive evidence</a>
@@ -156,6 +158,10 @@
         the 1 ms gate ends while the resonance envelope is still large.</p>
 
       <div class="controls">
+        <div class="ctl">
+          <span class="ctl-label" id="scenarioLabel">Guided scenarios</span>
+          <div class="button-row" id="scenarioPresets" role="group" aria-labelledby="scenarioLabel"></div>
+        </div>
         <div class="ctl">
           <label for="exampleType">Example</label>
           <select id="exampleType">
@@ -227,6 +233,45 @@
         <span><i class="swatch" style="background:#e05c5c"></i> omitted time region / ~1/T detail band</span>
         <span><i class="swatch" style="background:#3ecf8e"></i> selected decay target reached</span>
       </div>
+
+      <h3>Across frequency and Q — where is the selected tail criterion met?</h3>
+      <div class="plotbox">
+        <div class="plottitle">Containment map — Q<sub>max</sub>(f<sub>0</sub>) = πf<sub>0</sub>T/ln(1/ε), bounded on the right by Nyquist</div>
+        <canvas id="containmentCanvas" aria-label="Frequency versus Q containment map for the selected duration and decay target" aria-describedby="demoReadout">
+          Your browser does not support canvas. The text readout below gives the current Q bound and containment result.
+        </canvas>
+      </div>
+      <div class="legend">
+        <span><i class="swatch" style="background:rgba(62,207,142,.75)"></i> contained to selected target</span>
+        <span><i class="swatch" style="background:rgba(224,92,92,.75)"></i> target not reached by T</span>
+        <span><i class="swatch" style="background:#ff9f43"></i> selected −20/−40/−60 dB boundary</span>
+        <span><i class="swatch" style="background:#8d99ab"></i> other target boundaries (dashed)</span>
+        <span><i class="swatch" style="background:#4da3ff"></i> your f<sub>0</sub>, Q point</span>
+      </div>
+      <p class="note">The frequency axis starts at the 20 Hz control minimum because a logarithmic axis cannot
+        display DC; the digital representation bound remains 0…F<sub>s</sub>/2. Below the selected line the
+        envelope reaches ε by T; above it the tail is still larger. Click/tap or drag inside the map to set
+        f<sub>0</sub> and Q. This is a criterion map, not a hard minimum-frequency chart.</p>
+
+      <h3>Across gate length — how do the tail and spectrum converge?</h3>
+      <div class="plotbox">
+        <div class="plottitle">Gate-length convergence — envelope remaining at T versus finite/full level error at f₀</div>
+        <canvas id="convergenceCanvas" aria-label="Tail amplitude and spectral level error as record duration increases" aria-describedby="demoReadout">
+          Your browser does not support canvas. The text readout below gives the current tail level, spectral error, and required duration.
+        </canvas>
+      </div>
+      <div class="legend">
+        <span><i class="swatch" style="background:#ff9f43"></i> tail envelope at the gate boundary</span>
+        <span><i class="swatch" style="background:#4da3ff"></i> finite/full level error at f<sub>0</sub></span>
+        <span><i class="swatch" style="background:#3ecf8e"></i> selected amplitude target / required T</span>
+        <span><i class="swatch" style="background:#e8edf4"></i> current T</span>
+      </div>
+      <p class="note">Only the orange curve is tested against the selected amplitude target. The blue spectral
+        error can ripple as a cosine is truncated, but it converges toward 0 dB as the omitted tail vanishes.
+        Click/tap or drag within the control’s 0.25–20 ms range to set T. The sliders remain the
+        keyboard-accessible alternative. The two curves deliberately show that tail containment and spectral
+        accuracy are related—not identical—criteria.</p>
+
       <div class="readout" id="demoReadout" role="status" aria-live="polite"></div>
       <p class="note">Try the single-sample impulse at 1 ms: its line remains exactly 0 dB from DC to
         Nyquist even though the DFT dots are 1 kHz apart. Then return to the resonance and raise T until the

@@ -12,11 +12,42 @@ const DEFAULT_STATE = Object.freeze({
   targetDb: -40,
 });
 
+const SCENARIO_PRESETS = Object.freeze([
+  Object.freeze({
+    id: 'impulse-counterexample',
+    label: '1 · one-tap counterexample',
+    description: 'A 1 ms / 48 kHz record whose DTFT is exactly flat, including DC.',
+    state: Object.freeze({ example: 'impulse', durationMs: 1, sampleRate: 48000,
+      f0Hz: 1000, qualityFactor: 10, targetDb: -40 }),
+  }),
+  Object.freeze({
+    id: 'truncated-default',
+    label: '2 · truncated resonance',
+    description: 'The default 1 ms resonance: its −40 dB tail target is not contained.',
+    state: Object.freeze({ ...DEFAULT_STATE }),
+  }),
+  Object.freeze({
+    id: 'just-contained',
+    label: '3 · just contained',
+    description: 'The same resonance at 14.75 ms, just beyond its 14.66 ms −40 dB requirement.',
+    state: Object.freeze({ ...DEFAULT_STATE, durationMs: 14.75 }),
+  }),
+  Object.freeze({
+    id: 'double-sample-rate',
+    label: '4 · same T, double Fs',
+    description: 'The same truncated 1 ms resonance at 96 kHz: twice the samples and Nyquist, unchanged containment.',
+    state: Object.freeze({ ...DEFAULT_STATE, sampleRate: 96000 }),
+  }),
+]);
+
+const CONTAINMENT_PLOT = Object.freeze({ left: 58, right: 34, top: 22, bottom: 34 });
+const CONVERGENCE_PLOT = Object.freeze({ left: 58, right: 28, top: 22, bottom: 36 });
+
 const REQUIRED_IDS = Object.freeze([
-  'exampleType', 'durationMs', 'durationValue', 'sampleRate',
+  'scenarioPresets', 'exampleType', 'durationMs', 'durationValue', 'sampleRate',
   'resonanceControls', 'f0Hz', 'f0Value', 'qualityFactor', 'qualityValue', 'targetDb',
   'demoReset', 'predictionOptions', 'predictionWhy',
-  'timeCanvas', 'frequencyCanvas', 'demoReadout',
+  'timeCanvas', 'frequencyCanvas', 'containmentCanvas', 'convergenceCanvas', 'demoReadout',
   'quizBox', 'quizScore', 'quizReset',
 ]);
 
@@ -286,6 +317,122 @@ function frequencyEvidence(result, count = 720) {
     }
   }
   return { frequencies, finiteDb, fullDb };
+}
+
+const DECAY_TARGETS_DB = Object.freeze([-20, -40, -60]);
+
+function logValues(minimum, maximum, count) {
+  requirePositiveFinite(minimum, 'minimum');
+  requirePositiveFinite(maximum, 'maximum');
+  if (maximum <= minimum) throw new RangeError('maximum must be greater than minimum');
+  if (!Number.isInteger(count) || count < 2) throw new RangeError('count must be an integer of at least 2');
+  const span = Math.log(maximum / minimum);
+  return Array.from({ length: count }, (_, i) => minimum * Math.exp(span * i / (count - 1)));
+}
+
+function containmentMapData(result, count = 280) {
+  if (!result || result.example !== 'resonance') return null;
+  const frequencyMinHz = Math.min(20, result.nyquistHz / 2);
+  const frequencies = logValues(frequencyMinHz, result.nyquistHz, count);
+  const targetDbs = DECAY_TARGETS_DB.includes(result.targetDb)
+    ? DECAY_TARGETS_DB
+    : [...DECAY_TARGETS_DB, result.targetDb].sort((a, b) => b - a);
+  const curves = targetDbs.map(targetDb => ({
+    targetDb,
+    qMax: Float64Array.from(frequencies,
+      frequency => maxContainedQ(result.durationSeconds, frequency, targetDb)),
+  }));
+  return {
+    frequencyMinHz,
+    frequencyMaxHz: result.nyquistHz,
+    qMin: 0.1,
+    qMax: 100,
+    frequencies,
+    curves,
+    selectedTargetDb: result.targetDb,
+    selectedCurve: curves.find(curve => curve.targetDb === result.targetDb),
+    current: {
+      f0Hz: result.f0Hz,
+      qualityFactor: result.qualityFactor,
+      qBoundary: result.qMax,
+      contained: result.contained,
+    },
+  };
+}
+
+function gateConvergenceRange(result) {
+  if (!result) throw new TypeError('result is required');
+  return {
+    minimumDurationMs: 1000 / result.sampleRate,
+    maximumDurationMs: result.example === 'resonance'
+      ? Math.max(20, result.durationMs * 1.25, result.requiredDurationMs * 1.2)
+      : Math.max(20, result.durationMs * 1.25),
+  };
+}
+
+function gateConvergenceData(result, count = 360) {
+  const { minimumDurationMs, maximumDurationMs } = gateConvergenceRange(result);
+  const requestedDurations = logValues(minimumDurationMs, maximumDurationMs, count);
+  const durationsMs = new Float64Array(count);
+  const tailDb = new Float64Array(count);
+  const spectralErrorDb = new Float64Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const sampleCount = Math.max(1, Math.round(requestedDurations[i] * 1e-3 * result.sampleRate));
+    const durationSeconds = sampleCount / result.sampleRate;
+    durationsMs[i] = durationSeconds * 1000;
+    if (result.example === 'impulse') {
+      tailDb[i] = 0;
+      spectralErrorDb[i] = 0;
+    } else {
+      tailDb[i] = -20 / Math.LN10 * durationSeconds / result.tauSeconds;
+      const finiteAtF0 = resonanceDtftMagnitude(
+        result.f0Hz, result.f0Hz, result.qualityFactor, result.sampleRate, sampleCount);
+      spectralErrorDb[i] = 20 * Math.log10(finiteAtF0 / result.referenceMagnitude);
+    }
+  }
+  return {
+    minimumDurationMs,
+    maximumDurationMs,
+    durationsMs,
+    tailDb,
+    spectralErrorDb,
+    currentDurationMs: result.durationMs,
+    currentTailDb: result.example === 'resonance' ? result.residualDb : 0,
+    currentSpectralErrorDb: result.example === 'resonance' ? result.truncationAtF0Db : 0,
+    requiredDurationMs: result.example === 'resonance' ? result.requiredDurationMs : null,
+    targetDb: result.example === 'resonance' ? result.targetDb : null,
+  };
+}
+
+function containmentParametersAtCanvasPoint(result, px, py, width, height) {
+  if (!result || result.example !== 'resonance') return null;
+  const p = CONTAINMENT_PLOT;
+  const plotWidth = width - p.left - p.right;
+  const plotHeight = height - p.top - p.bottom;
+  if (plotWidth <= 0 || plotHeight <= 0 || px < p.left || px > width - p.right || py < p.top || py > height - p.bottom) {
+    return null;
+  }
+  const frequencyMinHz = Math.min(20, result.nyquistHz / 2);
+  const xFraction = (px - p.left) / plotWidth;
+  const yFraction = (py - p.top) / plotHeight;
+  return {
+    f0Hz: frequencyMinHz * Math.exp(Math.log(result.nyquistHz / frequencyMinHz) * xFraction),
+    qualityFactor: 0.1 * Math.exp(Math.log(100 / 0.1) * (1 - yFraction)),
+  };
+}
+
+function convergenceDurationAtCanvasPoint(result, px, py, width, height) {
+  if (!result) return null;
+  const p = CONVERGENCE_PLOT;
+  const plotWidth = width - p.left - p.right;
+  const plotHeight = height - p.top - p.bottom;
+  if (plotWidth <= 0 || plotHeight <= 0 || px < p.left || px > width - p.right || py < p.top || py > height - p.bottom) {
+    return null;
+  }
+  const { minimumDurationMs, maximumDurationMs } = gateConvergenceRange(result);
+  const fraction = (px - p.left) / plotWidth;
+  return minimumDurationMs * Math.exp(Math.log(maximumDurationMs / minimumDurationMs) * fraction);
 }
 
 function clampToInput(input, rawValue) {
@@ -562,6 +709,239 @@ function drawFrequency(canvas, result, win) {
   }
 }
 
+function drawContainmentMap(canvas, result, win) {
+  const { ctx, width, height } = sizeCanvas(canvas, win);
+  const p = CONTAINMENT_PLOT;
+  const plotWidth = width - p.left - p.right;
+  const plotHeight = height - p.top - p.bottom;
+  ctx.clearRect(0, 0, width, height);
+  ctx.font = '11px system-ui';
+
+  const data = containmentMapData(result);
+  if (!data) {
+    ctx.strokeStyle = COLORS.border;
+    ctx.strokeRect(p.left, p.top, plotWidth, plotHeight);
+    ctx.fillStyle = COLORS.finite; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Single-tap impulse: no resonance f₀/Q containment boundary is needed.', width / 2, height / 2 - 8);
+    ctx.fillStyle = COLORS.axis;
+    ctx.fillText('It is fully contained once its one nonzero sample is stored.', width / 2, height / 2 + 12);
+    return;
+  }
+
+  const logFSpan = Math.log(data.frequencyMaxHz / data.frequencyMinHz);
+  const logQSpan = Math.log(data.qMax / data.qMin);
+  const x = frequency => p.left + Math.log(frequency / data.frequencyMinHz) / logFSpan * plotWidth;
+  const y = quality => p.top + (1 - Math.log(quality / data.qMin) / logQSpan) * plotHeight;
+  const clippedQ = quality => Math.max(data.qMin, Math.min(data.qMax, quality));
+  const selected = data.selectedCurve;
+
+  ctx.save(); ctx.beginPath(); ctx.rect(p.left, p.top, plotWidth, plotHeight); ctx.clip();
+  ctx.fillStyle = 'rgba(224,92,92,0.075)';
+  ctx.fillRect(p.left, p.top, plotWidth, plotHeight);
+  ctx.beginPath();
+  for (let i = 0; i < data.frequencies.length; i++) {
+    const px = x(data.frequencies[i]);
+    const py = y(clippedQ(selected.qMax[i]));
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.lineTo(x(data.frequencyMaxHz), y(data.qMin));
+  ctx.lineTo(x(data.frequencyMinHz), y(data.qMin));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(62,207,142,0.10)'; ctx.fill();
+  ctx.restore();
+
+  const frequencyTicks = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 50000]
+    .filter(frequency => frequency >= data.frequencyMinHz && frequency <= data.frequencyMaxHz * 0.78)
+    .concat(data.frequencyMaxHz)
+    .filter((frequency, index, list) => index === 0 || Math.abs(frequency - list[index - 1]) > 1e-9);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (const frequency of frequencyTicks) {
+    const px = x(frequency);
+    ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px, p.top); ctx.lineTo(px, height - p.bottom); ctx.stroke();
+    ctx.fillStyle = COLORS.axis;
+    const label = frequency >= 1000 ? `${frequency / 1000}k` : String(frequency);
+    ctx.fillText(frequency === data.frequencyMaxHz ? `${label} Hz` : label, px, height - p.bottom + 7);
+  }
+
+  const qTicks = [0.1, 0.3, 1, 3, 10, 30, 100];
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (const quality of qTicks) {
+    const py = y(quality);
+    ctx.strokeStyle = COLORS.grid;
+    ctx.beginPath(); ctx.moveTo(p.left, py); ctx.lineTo(width - p.right, py); ctx.stroke();
+    ctx.fillStyle = COLORS.axis; ctx.fillText(String(quality), p.left - 7, py);
+  }
+  ctx.textBaseline = 'bottom'; ctx.fillText('Q', p.left - 7, p.top - 3);
+  ctx.strokeStyle = COLORS.border; ctx.strokeRect(p.left, p.top, plotWidth, plotHeight);
+
+  ctx.save(); ctx.beginPath(); ctx.rect(p.left, p.top, plotWidth, plotHeight); ctx.clip();
+  for (const curve of data.curves) {
+    const isSelected = curve.targetDb === data.selectedTargetDb;
+    ctx.strokeStyle = isSelected ? COLORS.accent : COLORS.axis;
+    ctx.lineWidth = isSelected ? 2.3 : 1.2;
+    ctx.setLineDash(isSelected ? [] : [6, 5]);
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < data.frequencies.length; i++) {
+      const quality = curve.qMax[i];
+      const px = x(data.frequencies[i]), py = y(clippedQ(quality));
+      if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+
+    const labelQ = clippedQ(curve.qMax[curve.qMax.length - 1]);
+    ctx.fillStyle = isSelected ? COLORS.accent : COLORS.axis;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    ctx.fillText(`${curve.targetDb} dB`, width - p.right - 6, y(labelQ) - 3);
+  }
+
+  const pointX = x(data.current.f0Hz), pointY = y(clippedQ(data.current.qualityFactor));
+  ctx.fillStyle = COLORS.finite; ctx.strokeStyle = COLORS.full; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(pointX, pointY, 5, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  const labelX = pointX + (pointX > width - 150 ? -8 : 8);
+  const nearTop = pointY < p.top + 36;
+  const nearBottom = pointY > height - p.bottom - 36;
+  ctx.textAlign = pointX > width - 150 ? 'right' : 'left';
+  const pointLabel = `you: ${formatFrequency(data.current.f0Hz)}, Q ${data.current.qualityFactor.toFixed(1)}`;
+  ctx.fillStyle = COLORS.finite;
+  ctx.textBaseline = nearTop ? 'top' : 'bottom';
+  ctx.fillText(pointLabel, labelX, nearTop ? pointY + 7 : pointY - (nearBottom ? 22 : 7));
+  ctx.fillStyle = data.current.contained ? COLORS.target : COLORS.omitted;
+  ctx.textBaseline = nearBottom ? 'bottom' : 'top';
+  ctx.fillText(data.current.contained ? 'contained' : 'target not reached',
+    labelX, nearBottom ? pointY - 7 : pointY + (nearTop ? 22 : 7));
+}
+
+function logTickValues(minimum, maximum) {
+  const ticks = [];
+  const firstDecade = Math.floor(Math.log10(minimum));
+  const lastDecade = Math.ceil(Math.log10(maximum));
+  for (let decade = firstDecade; decade <= lastDecade; decade++) {
+    const scale = Math.pow(10, decade);
+    for (const multiplier of [1, 2, 5]) {
+      const value = multiplier * scale;
+      if (value >= minimum * (1 - 1e-12) && value <= maximum * (1 + 1e-12)) ticks.push(value);
+    }
+  }
+  return ticks;
+}
+
+function formatGateTime(durationMs) {
+  if (durationMs < 1) return `${Math.round(durationMs * 1000)} µs`;
+  if (durationMs < 1000) return `${durationMs < 10 ? durationMs.toFixed(1) : durationMs.toFixed(0)} ms`;
+  const seconds = durationMs / 1000;
+  return `${seconds < 10 ? seconds.toFixed(1) : seconds.toFixed(0)} s`;
+}
+
+function drawConvergence(canvas, result, win) {
+  const { ctx, width, height } = sizeCanvas(canvas, win);
+  const p = CONVERGENCE_PLOT;
+  const plotWidth = width - p.left - p.right;
+  const plotHeight = height - p.top - p.bottom;
+  const data = gateConvergenceData(result);
+  const xMin = data.minimumDurationMs;
+  const xMax = Math.max(data.maximumDurationMs, data.durationsMs[data.durationsMs.length - 1]);
+  const logTSpan = Math.log(xMax / xMin);
+  const x = durationMs => p.left + Math.log(durationMs / xMin) / logTSpan * plotWidth;
+
+  let yMin = -12, yMax = 3;
+  if (result.example === 'resonance') {
+    let minimumValue = data.targetDb;
+    for (let i = 0; i < data.durationsMs.length; i++) {
+      minimumValue = Math.min(minimumValue, data.tailDb[i], data.spectralErrorDb[i]);
+    }
+    yMin = Math.max(-140, Math.floor((minimumValue - 4) / 10) * 10);
+    yMax = 5;
+  }
+  const y = db => p.top + (1 - (db - yMin) / (yMax - yMin)) * plotHeight;
+  const clippedY = db => y(Math.max(yMin, Math.min(yMax, db)));
+
+  ctx.clearRect(0, 0, width, height);
+  ctx.font = '11px system-ui'; ctx.lineWidth = 1;
+  const rawTimeTicks = logTickValues(xMin, xMax);
+  const timeTicks = [];
+  let lastTickX = -Infinity;
+  for (const durationMs of rawTimeTicks) {
+    const px = x(durationMs);
+    if (px - lastTickX >= 42 || timeTicks.length === 0) {
+      timeTicks.push(durationMs); lastTickX = px;
+    }
+  }
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (const durationMs of timeTicks) {
+    const px = x(durationMs);
+    ctx.strokeStyle = COLORS.grid;
+    ctx.beginPath(); ctx.moveTo(px, p.top); ctx.lineTo(px, height - p.bottom); ctx.stroke();
+    ctx.fillStyle = COLORS.axis; ctx.fillText(formatGateTime(durationMs), px, height - p.bottom + 7);
+  }
+
+  const yStep = result.example === 'resonance' ? 10 : 3;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  for (let db = Math.ceil(yMin / yStep) * yStep; db <= yMax + 1e-9; db += yStep) {
+    const py = y(db);
+    ctx.strokeStyle = COLORS.grid;
+    ctx.beginPath(); ctx.moveTo(p.left, py); ctx.lineTo(width - p.right, py); ctx.stroke();
+    ctx.fillStyle = COLORS.axis; ctx.fillText(String(db), p.left - 7, py);
+  }
+  ctx.textBaseline = 'bottom'; ctx.fillText('dB', p.left - 7, p.top - 3);
+  ctx.strokeStyle = COLORS.border; ctx.strokeRect(p.left, p.top, plotWidth, plotHeight);
+
+  ctx.save(); ctx.beginPath(); ctx.rect(p.left, p.top, plotWidth, plotHeight); ctx.clip();
+  function curve(values, color, widthPx) {
+    ctx.strokeStyle = color; ctx.lineWidth = widthPx; ctx.beginPath();
+    for (let i = 0; i < data.durationsMs.length; i++) {
+      const px = x(Math.max(xMin, data.durationsMs[i]));
+      const py = clippedY(values[i]);
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  if (result.example === 'resonance') {
+    const targetY = y(data.targetDb);
+    ctx.strokeStyle = COLORS.target; ctx.lineWidth = 1.2; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(p.left, targetY); ctx.lineTo(width - p.right, targetY); ctx.stroke();
+    ctx.setLineDash([]);
+    curve(data.tailDb, COLORS.accent, 2.2);
+    curve(data.spectralErrorDb, COLORS.finite, 2.2);
+
+    const requiredX = x(Math.max(xMin, data.requiredDurationMs));
+    ctx.strokeStyle = COLORS.target; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(requiredX, p.top); ctx.lineTo(requiredX, height - p.bottom); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    curve(data.spectralErrorDb, COLORS.finite, 2.2);
+  }
+
+  const currentMarkerX = x(data.currentDurationMs);
+  ctx.strokeStyle = COLORS.full; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+  ctx.beginPath(); ctx.moveTo(currentMarkerX, p.top); ctx.lineTo(currentMarkerX, height - p.bottom); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  const currentX = x(data.currentDurationMs);
+  ctx.fillStyle = COLORS.full; ctx.textAlign = currentX > width - 125 ? 'right' : 'left'; ctx.textBaseline = 'top';
+  ctx.fillText(`current T ${formatGateTime(data.currentDurationMs)}`,
+    currentX + (currentX > width - 125 ? -6 : 6), p.top + 5);
+  if (result.example === 'resonance') {
+    const requiredX = x(Math.max(xMin, data.requiredDurationMs));
+    ctx.fillStyle = COLORS.target; ctx.textAlign = requiredX > width - 140 ? 'right' : 'left';
+    const requiredLabel = data.requiredDurationMs < xMin
+      ? 'target before one sample interval'
+      : `target at ${formatGateTime(data.requiredDurationMs)}`;
+    ctx.fillText(requiredLabel,
+      requiredX + (requiredX > width - 140 ? -6 : 6), p.top + 20);
+    ctx.fillStyle = COLORS.target; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    ctx.fillText(`${data.targetDb} dB amplitude target`, p.left + 7, y(data.targetDb) - 4);
+  } else {
+    ctx.fillStyle = COLORS.finite; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText('One tap: finite/full spectral error stays at 0 dB.', p.left + 8, p.top + 24);
+  }
+}
+
 function formatReadout(result) {
   const sampling = `T = <b>${result.durationMs.toFixed(2)} ms</b> · F<sub>s</sub> = <b>${formatFrequency(result.sampleRate)}</b> · ` +
     `N = <b>${result.sampleCount} samples</b> · unpadded DFT spacing = <b>${formatFrequency(result.dftSpacingHz)}</b> · ` +
@@ -600,6 +980,23 @@ function makeElement(doc, tag, className, text) {
   if (className) element.className = className;
   if (text !== undefined) element.textContent = text;
   return element;
+}
+
+function presetMatchesState(preset, state) {
+  return Object.keys(DEFAULT_STATE).every(key => preset.state[key] === state[key]);
+}
+
+function renderScenarioPresets(doc, box, onSelect) {
+  clearElement(box);
+  return SCENARIO_PRESETS.map(preset => {
+    const button = makeElement(doc, 'button', 'padbtn', preset.label);
+    button.type = 'button';
+    button.setAttribute('title', preset.description);
+    button.setAttribute('aria-pressed', 'false');
+    button.addEventListener('click', () => onSelect(preset));
+    box.appendChild(button);
+    return button;
+  });
 }
 
 function renderPrediction(doc, optionsBox, feedback) {
@@ -706,11 +1103,39 @@ function installChapterLinks(doc, win) {
   return links;
 }
 
+function installCanvasPointerControl(canvas, onPoint) {
+  let dragging = false;
+  canvas.style.touchAction = 'none';
+  canvas.style.cursor = 'crosshair';
+  function localPoint(event) {
+    const rect = canvas.getBoundingClientRect();
+    return { x: event.clientX - rect.left, y: event.clientY - rect.top, width: rect.width, height: rect.height };
+  }
+  canvas.addEventListener('pointerdown', event => {
+    const point = localPoint(event);
+    if (!onPoint(point.x, point.y, point.width, point.height)) return;
+    dragging = true;
+    if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+  canvas.addEventListener('pointermove', event => {
+    if (!dragging) return;
+    const point = localPoint(event);
+    onPoint(point.x, point.y, point.width, point.height);
+  });
+  const stop = () => { dragging = false; };
+  canvas.addEventListener('pointerup', stop);
+  canvas.addEventListener('pointercancel', stop);
+  return { isDragging: () => dragging };
+}
+
 function initLesson(doc, win) {
   if (!doc || !win) throw new TypeError('initLesson requires document and window objects');
   const elements = getRequiredElements(doc);
   const state = { ...DEFAULT_STATE };
   let quizView;
+  let presetButtons = [];
+  let lastResult = null;
 
   function syncFrequencyLimit() {
     const limit = state.sampleRate / 2;
@@ -720,17 +1145,39 @@ function initLesson(doc, win) {
     elements.f0Hz.value = String(state.f0Hz);
   }
 
+  function updatePresetSelection() {
+    presetButtons.forEach((button, index) => {
+      const active = presetMatchesState(SCENARIO_PRESETS[index], state);
+      button.classList[active ? 'add' : 'remove']('active');
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
   function updateLabels() {
     elements.durationValue.textContent = `${state.durationMs.toFixed(2)} ms`;
     elements.f0Value.textContent = formatFrequency(state.f0Hz);
     elements.qualityValue.textContent = state.qualityFactor.toFixed(1);
     elements.resonanceControls.disabled = state.example === 'impulse';
+    updatePresetSelection();
+  }
+
+  function syncControlsFromState() {
+    elements.exampleType.value = state.example;
+    elements.durationMs.value = String(state.durationMs);
+    elements.sampleRate.value = String(state.sampleRate);
+    syncFrequencyLimit();
+    elements.f0Hz.value = String(state.f0Hz);
+    elements.qualityFactor.value = String(state.qualityFactor);
+    elements.targetDb.value = String(state.targetDb);
   }
 
   function draw() {
     const result = calculateLesson(state);
+    lastResult = result;
     drawTime(elements.timeCanvas, result, win);
     drawFrequency(elements.frequencyCanvas, result, win);
+    drawContainmentMap(elements.containmentCanvas, result, win);
+    drawConvergence(elements.convergenceCanvas, result, win);
     elements.demoReadout.innerHTML = formatReadout(result);
     return result;
   }
@@ -765,18 +1212,22 @@ function initLesson(doc, win) {
   });
   elements.targetDb.addEventListener('change', () => {
     state.targetDb = Number.parseFloat(elements.targetDb.value);
-    throttledDraw();
+    updateLabels(); throttledDraw();
   });
 
+  function applyState(nextState) {
+    Object.assign(state, nextState);
+    syncControlsFromState();
+    updateLabels();
+    return draw();
+  }
+
+  function applyPreset(preset) {
+    return applyState(preset.state);
+  }
+
   function resetDemo() {
-    Object.assign(state, DEFAULT_STATE);
-    elements.exampleType.value = state.example;
-    elements.durationMs.value = String(state.durationMs);
-    elements.sampleRate.value = String(state.sampleRate);
-    elements.f0Hz.value = String(state.f0Hz);
-    elements.qualityFactor.value = String(state.qualityFactor);
-    elements.targetDb.value = String(state.targetDb);
-    syncFrequencyLimit(); updateLabels(); draw();
+    return applyState(DEFAULT_STATE);
   }
 
   elements.demoReset.addEventListener('click', resetDemo);
@@ -785,10 +1236,34 @@ function initLesson(doc, win) {
   });
 
   syncFrequencyLimit();
+  presetButtons = renderScenarioPresets(doc, elements.scenarioPresets, applyPreset);
   updateLabels();
   const predictionButtons = renderPrediction(doc, elements.predictionOptions, elements.predictionWhy);
   quizView = renderQuiz(doc, elements.quizBox, elements.quizScore);
   installChapterLinks(doc, win);
+
+  const directControls = {
+    containment: installCanvasPointerControl(elements.containmentCanvas, (px, py, width, height) => {
+      const values = containmentParametersAtCanvasPoint(lastResult, px, py, width, height);
+      if (!values) return false;
+      state.f0Hz = clampToInput(elements.f0Hz, values.f0Hz);
+      state.qualityFactor = clampToInput(elements.qualityFactor, values.qualityFactor);
+      elements.f0Hz.value = String(state.f0Hz);
+      elements.qualityFactor.value = String(state.qualityFactor);
+      updateLabels(); throttledDraw();
+      return true;
+    }),
+    convergence: installCanvasPointerControl(elements.convergenceCanvas, (px, py, width, height) => {
+      const durationMs = convergenceDurationAtCanvasPoint(lastResult, px, py, width, height);
+      const min = Number.parseFloat(elements.durationMs.min);
+      const max = Number.parseFloat(elements.durationMs.max);
+      if (durationMs === null || durationMs < min || durationMs > max) return false;
+      state.durationMs = clampToInput(elements.durationMs, durationMs);
+      elements.durationMs.value = String(state.durationMs);
+      updateLabels(); throttledDraw();
+      return true;
+    }),
+  };
 
   let resizeTimer = null;
   win.addEventListener('resize', () => {
@@ -804,7 +1279,10 @@ function initLesson(doc, win) {
     elements,
     draw,
     resetDemo,
+    applyPreset,
+    presetButtons,
     predictionButtons,
+    directControls,
     get quizView() { return quizView; },
   };
 }
@@ -821,6 +1299,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     DEFAULT_STATE,
+    SCENARIO_PRESETS,
     REQUIRED_IDS,
     PREDICTION,
     QUIZ,
@@ -839,14 +1318,26 @@ if (typeof module !== 'undefined' && module.exports) {
     generateFiniteIR,
     frequencyGrid,
     frequencyEvidence,
+    DECAY_TARGETS_DB,
+    logValues,
+    containmentMapData,
+    gateConvergenceRange,
+    gateConvergenceData,
+    containmentParametersAtCanvasPoint,
+    convergenceDurationAtCanvasPoint,
     clampToInput,
     formatFrequency,
     rafThrottle,
     drawTime,
     drawFrequency,
+    drawContainmentMap,
+    drawConvergence,
     formatReadout,
+    presetMatchesState,
+    renderScenarioPresets,
     renderPrediction,
     renderQuiz,
+    installCanvasPointerControl,
     initLesson,
   };
 }
