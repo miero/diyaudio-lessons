@@ -75,6 +75,10 @@
   .toc a:hover{text-decoration:underline}
   a.ext{color:var(--accent);text-decoration:none}
   a.ext:hover{text-decoration:underline}
+  .plotbox{background:var(--panel2);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .plotbox canvas{border:none;background:transparent;border-radius:0}
+  .plottitle{font-size:12px;color:#93a0b4;padding:7px 12px 3px}
+  button.rstbtn{font-size:11.5px;padding:3px 10px;opacity:.9;margin-left:auto}
   .hlink{margin-left:8px;display:inline-block;vertical-align:middle;color:var(--muted);opacity:.45;
     text-decoration:none;position:relative}
   h2:hover .hlink,.hlink:focus{opacity:1;color:var(--accent)}
@@ -92,7 +96,7 @@
 <div class="wrap">
 
   <h1>Extending the gate with a <span style="color:var(--accent)">narrow-band filter bank</span> — an alternative to tail fitting, evaluated</h1>
-  <p class="sub">Demo 6 of the gating primer extends a too-short gate by fitting the decaying tail, in the
+  <p class="sub"><a class="ext" href="gating.html#demo-6">Demo 6</a> of the <a class="ext" href="gating.html">gating primer</a> extends a too-short gate by fitting the decaying tail, in the
   time domain, as one damped sinusoid. This page evaluates a different route to the same goal: run the gated
   measurement through a bank of <b>very narrow bandpass filters</b>, watch the <i>unnatural</i> energy decay
   the gate leaves in each band, reconstruct the “true” decay there from a theoretical assumption, and let a
@@ -103,7 +107,7 @@
   Horn Design — the easy way (ATH4)”, post #8360102</a> — narrow-bandpass filters to expose the gate’s
   per-band decay, a modeled reconstruction of the true decay, and a dense bank to reassemble the response.
   This page is a controlled test of that proposal.</p>
-  <p class="sub">Everything runs on the identical <b>“Demo 6 speaker”</b> as gating.html (fast mid/treble
+  <p class="sub">Everything runs on the identical <b>“Demo 6 speaker”</b> as <a class="ext" href="gating.html">gating.html</a> (fast mid/treble
   modes plus one slow 68 Hz port-like tail, τ = 11 ms, floor reflection at 14 ms), plus a second, harder
   speaker with <b>two overlapping bass decays</b>. The red 1/T markers on the reconstruction plots are
   draggable.</p>
@@ -136,7 +140,7 @@
       <li><b>Q1</b> — What does gating actually do <i>inside one narrow band</i>? <span class="pill">Demo 2</span></li>
       <li><b>Q2</b> — Can the true decay of a band be reconstructed from its uncontaminated part? <span class="pill">Demo 3</span></li>
       <li><b>Q3</b> — Does a dense bank reconstruct the whole response? <span class="pill">Demo 4</span></li>
-      <li><b>Q4</b> — Does the bank beat Demo 6’s single global tail fit — and what does it cost? <span class="pill">Demo 4 &amp; 5</span></li>
+      <li><b>Q4</b> — Does the bank beat <a class="ext" href="gating.html#demo-6">Demo 6</a>’s single global tail fit — and what does it cost? <span class="pill">Demo 4 &amp; 5</span></li>
     </ol>
     <p class="note">All signals are synthetic impulse responses at fs = 48 kHz, spectra by direct DTFT
     (≡ zero-padded FFT). The filters are zero-phase Gaussian bandpasses of bandwidth σ<sub>f</sub>; the bank
@@ -157,9 +161,12 @@
     <div class="controls">
       <div class="ctl"><label for="bw1">Bandwidth σ<sub>f</sub></label>
         <input type="range" id="bw1" min="5" max="80" step="1" value="15"><b class="val" id="bw1v">15 Hz</b></div>
+      <div class="ctl"><button class="padbtn rstbtn" id="r1reset">reset defaults</button></div>
     </div>
-    <canvas id="cmT" class="h240"></canvas>
-    <canvas id="cmS" class="h240" style="margin-top:10px"></canvas>
+    <div class="plotbox"><div class="plottitle">bandpass kernel in time — one filter at 68 Hz (shaded: its ±2σ<sub>t</sub> memory)</div>
+      <canvas id="cmT" class="h240"></canvas></div>
+    <div class="plotbox" style="margin-top:10px"><div class="plottitle">the same filter in frequency — |H(f)|: narrow in frequency ⇒ long in time</div>
+      <canvas id="cmS" class="h240"></canvas></div>
     <div class="readout" id="rmR"></div>
     <p class="note">Top: the filter’s own impulse response (a 68 Hz carrier under a Gaussian envelope;
     shaded ±2σ<sub>t</sub>). Bottom: its spectrum. Squeeze one and the other stretches — try it. A 10 Hz
@@ -169,7 +176,7 @@
   <!-- ================= DEMO 2 ================= -->
   <div class="card" id="demo-2">
     <h2>Demo 2 — Q1: the unnatural decay the gate leaves in a band<a class="hlink" href="#demo-2" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
-    <p>Now filter the gated room measurement (same IR as gating.html’s Demo 6: slow 68 Hz tail, reflection
+    <p>Now filter the gated room measurement (same IR as <a class="ext" href="gating.html#demo-6">gating.html’s Demo 6</a>: slow 68 Hz tail, reflection
     at 14 ms, gate closed before it) with <b>one</b> bandpass and plot the band’s energy envelope. White
     dashed is the envelope of the same band applied to the <i>true</i> (reflection-free) response — what the
     band would show without any gate at all:</p>
@@ -180,13 +187,15 @@
         <input type="range" id="d2bw" min="5" max="60" step="1" value="20"><b class="val" id="d2bwV">20 Hz</b></div>
       <div class="ctl"><label for="d2t">Gate length T</label>
         <input type="range" id="d2t" min="4" max="13.75" step="0.25" value="10"><b class="val" id="d2tV">10.00 ms</b></div>
+      <div class="ctl"><button class="padbtn rstbtn" id="r2reset">reset defaults</button></div>
     </div>
     <div class="predict">
       <div class="ptitle">Predict before sliding the bandwidth: you make the band twice as narrow. What happens to the decay you observe?</div>
       <div class="popts" id="p2b"></div>
       <div class="pwhy" id="p2bwhy"></div>
     </div>
-    <canvas id="c2env" class="h240"></canvas>
+    <div class="plotbox"><div class="plottitle">energy decay inside one band — gated measurement vs the true (ungated) decay</div>
+      <canvas id="c2env" class="h240"></canvas></div>
     <div class="dslegend">
       <span><span class="swatch" style="background:#4da3ff"></span> band envelope of the gated measurement</span>
       <span><span class="swatch" style="background:#e8edf4"></span> band envelope of the true response (dashed)</span>
@@ -219,8 +228,10 @@
         <input type="range" id="d3c" min="0.5" max="3" step="0.1" value="1"><b class="val" id="d3cV">1.0σt</b></div>
       <div class="ctl"><label for="d3t">Gate length T</label>
         <input type="range" id="d3t" min="4" max="13.75" step="0.25" value="13"><b class="val" id="d3tV">13.00 ms</b></div>
+      <div class="ctl"><button class="padbtn rstbtn" id="r3reset">reset defaults</button></div>
     </div>
-    <canvas id="c3env" class="h240"></canvas>
+    <div class="plotbox"><div class="plottitle">one band: the measured decay, the fit window and the extrapolated fit</div>
+      <canvas id="c3env" class="h240"></canvas></div>
     <div class="dslegend">
       <span><span class="swatch" style="background:#4da3ff"></span> band envelope of the gated measurement</span>
       <span><span class="swatch" style="background:#e8edf4"></span> true band envelope (dashed)</span>
@@ -236,7 +247,7 @@
     already bent by the missing tail, biasing τ. Either way the seesaw collects its fee.</p>
     <p class="note">Note also that the fit is a <i>model</i> fit, not a peak-pick: the band’s content at
     68 Hz is too short-windowed for spectra to show a clean peak — the assumption “one damped sinusoid per
-    band” is doing the work, exactly as it does in Demo 6.</p>
+    band” is doing the work, exactly as it does in <a class="ext" href="gating.html#demo-6">Demo 6</a>.</p>
   </div>
 
   <!-- ================= DEMO 4 ================= -->
@@ -247,7 +258,7 @@
     perfect-reconstruction normalization, so they add back up to <i>exactly</i> the gated data. Each
     non-silent band is fitted as in Demo 3; past the contamination start, the gated samples are replaced by
     the sum of the fitted per-band tails, out to the <b>effective gate</b> — then the spectrum is computed.
-    For comparison, the orange curve is gating.html’s Demo 6 method: one global pole fit on the visible tail
+    For comparison, the orange curve is <a class="ext" href="gating.html#demo-6">gating.html’s Demo 6</a> method: one global pole fit on the visible tail
     (window 3 ms → gate end).</p>
     <div class="controls">
       <div class="ctl"><label for="d4bw">Bandwidth σ<sub>f</sub></label>
@@ -262,8 +273,10 @@
         <input type="range" id="d4c" min="0.5" max="3" step="0.1" value="1"><b class="val" id="d4cV">1.0σt</b></div>
       <div class="ctl"><label for="d4te">Effective gate T<sub>eff</sub></label>
         <input type="range" id="d4te" min="15" max="120" step="1" value="60"><b class="val" id="d4teV">60 ms</b></div>
+      <div class="ctl"><button class="padbtn rstbtn" id="r4reset">reset defaults</button></div>
     </div>
-    <canvas id="c4fr" class="h300"></canvas>
+    <div class="plotbox"><div class="plottitle">frequency response — gated data, Demo-6-style fit, bank reconstruction, truth</div>
+      <canvas id="c4fr" class="h300"></canvas></div>
     <div class="dslegend">
       <span><span class="swatch" style="background:#8a95a6"></span> real data only (gated at T)</span>
       <span><span class="swatch" style="background:#ff9f43"></span> Demo-6-style global tail fit</span>
@@ -291,7 +304,7 @@
     <h2>Demo 5 — Q4: two overlapping bass decays — where the bank is supposed to shine<a class="hlink" href="#demo-5" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
     <p>A harder speaker: the same mid/treble front end, but now <b>two</b> overlapping slow bass decays —
     60 Hz (τ = 11 ms, the “port”) and 130 Hz (τ = 5 ms, a box/board resonance), 70 Hz apart. The
-    time-domain tail of this speaker is <i>not</i> one damped sinusoid: Demo 6’s single global fit has
+    time-domain tail of this speaker is <i>not</i> one damped sinusoid: <a class="ext" href="gating.html#demo-6">Demo 6</a>’s single global fit has
     nothing correct to converge to. Surely the bank — fitting each band on its own — separates them?</p>
     <div class="controls">
       <div class="ctl"><label for="d5bw">Bandwidth σ<sub>f</sub></label>
@@ -304,8 +317,10 @@
         <input type="range" id="d5c" min="0.5" max="3" step="0.1" value="1"><b class="val" id="d5cV">1.0σt</b></div>
       <div class="ctl"><label for="d5te">Effective gate T<sub>eff</sub></label>
         <input type="range" id="d5te" min="15" max="120" step="1" value="60"><b class="val" id="d5teV">60 ms</b></div>
+      <div class="ctl"><button class="padbtn rstbtn" id="r5reset">reset defaults</button></div>
     </div>
-    <canvas id="c5fr" class="h300"></canvas>
+    <div class="plotbox"><div class="plottitle">frequency response — gated data, Demo-6-style fit, bank reconstruction, truth</div>
+      <canvas id="c5fr" class="h300"></canvas></div>
     <div class="dslegend">
       <span><span class="swatch" style="background:#8a95a6"></span> real data only (gated at T)</span>
       <span><span class="swatch" style="background:#ff9f43"></span> Demo-6-style global tail fit</span>
@@ -322,7 +337,7 @@
     fit windows empty; widen it to make the windows work and each band contains both modes. Slide
     σ<sub>f</sub> and watch the trade bite from both sides.</p>
     <p class="note">Note what this means: the failure is not the fitter’s — it is the same statement as
-    gating.html’s Demo 4, in filter-bank clothes. Below ≈ 1/T of the longest clean gate, the data does not
+    <a class="ext" href="gating.html#demo-4">gating.html’s Demo 4</a>, in filter-bank clothes. Below ≈ 1/T of the longest clean gate, the data does not
     determine the answer; a bank reorganizes the assumption, it does not add data. For bass like this,
     ground-plane or nearfield measurement remains the honest route.</p>
   </div>
@@ -372,7 +387,7 @@
             window cannot identify slow decays. “Very narrow” filters are precisely the ones that don’t fit
             in a gated record.</li>
           <li><b>Model error replaces truncation error.</b> Below ≈ 1/T nothing is measured — the bank swaps
-            a known smoothing for an assumption, with the same epistemic status as Demo 6’s tail.</li>
+            a known smoothing for an assumption, with the same epistemic status as <a class="ext" href="gating.html#demo-6">Demo 6</a>’s tail.</li>
           <li><b>Overlapping decays within one bandwidth are not separable</b> — the fit confidently absorbs
             the mixture into wrong parameters (high R², wrong τ), injecting plausible-looking wrong bass.</li>
           <li><b>More machinery</b> — a bank, a per-band nonlinear fit, a phantom guard — for cases a global
@@ -381,7 +396,7 @@
       </div>
     </div>
     <p><b>What this method actually is:</b> frequency-dependent gating — a Gabor/STFT-style decomposition —
-    combined with per-band modal extrapolation. It is the “advanced” route gating.html points at, made
+    combined with per-band modal extrapolation. It is the “advanced” route <a class="ext" href="gating.html#advanced">gating.html</a> points at, made
     concrete: it redistributes the 1/T trade across frequency instead of applying one global gate, and it
     moves the model assumption from global (one tail) to local (one decay per band). It does <b>not</b>
     break the time–frequency limit: every dB of recovered bass is paid for by an assumption about how that
@@ -401,8 +416,8 @@
     <div class="controls"><button id="qzreset" class="padbtn">Reset quiz</button></div>
   </div>
 
-  <footer>Synthetic educational demo — companion to gating.html’s Demo 6. Signals: sums of damped sinusoids
-  (one-tail speaker identical to gating.html; two-tail variant adds a 130 Hz / 5 ms decay); Gaussian
+  <footer>Synthetic educational demo — companion to <a class="ext" href="gating.html#demo-6">gating.html’s Demo 6</a>. Signals: sums of damped sinusoids
+  (one-tail speaker identical to <a class="ext" href="gating.html">gating.html</a>; two-tail variant adds a 130 Hz / 5 ms decay); Gaussian
   bandpass bank with exact overlap-sum normalization; spectra by direct DTFT at fs = 48 kHz.
   <a href="#">back to top</a></footer>
 </div>

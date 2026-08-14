@@ -716,7 +716,8 @@ for (const id of ['cmT', 'cmS', 'c2env', 'c3env', 'c4fr', 'c5fr',
                   'd3bw', 'd3bwV', 'd3tA', 'd3tAV', 'd3c', 'd3cV', 'd3t', 'd3tV',
                   'd4bw', 'd4bwV', 'd4sp', 'd4t', 'd4tV', 'd4tA', 'd4tAV', 'd4c', 'd4cV', 'd4te', 'd4teV',
                   'd5bw', 'd5bwV', 'd5t', 'd5tV', 'd5tA', 'd5tAV', 'd5c', 'd5cV', 'd5te', 'd5teV',
-                  'p2b', 'p2bwhy', 'quizbox', 'qzscore', 'qzreset']) {
+                  'p2b', 'p2bwhy', 'quizbox', 'qzscore', 'qzreset',
+                  'r1reset', 'r2reset', 'r3reset', 'r4reset', 'r5reset']) {
   els[id] = document.getElementById(id);
 }
 
@@ -791,8 +792,6 @@ function drawDemo1() {
     }
     c.setLineDash([]);
     c.restore();
-    c.fillStyle = '#93a0b4'; c.textAlign = 'left'; c.textBaseline = 'top';
-    c.fillText(`bandpass kernel at 68 Hz (shaded: \u00b12\u03c3t = \u00b1${(2 * sigT * 1000).toFixed(0)} ms of memory)`, ml + 6, mt + 2);
   }
 
   /* spectrum view: the Gaussian passband, fixed 20..200 Hz axis */
@@ -838,8 +837,6 @@ function drawDemo1() {
     c.fillStyle = '#3ecf8e'; c.textAlign = 'center'; c.textBaseline = 'bottom';
     c.fillText(`\u22126 dB width \u2248 ${w6.toFixed(0)} Hz`, X(68), Y(-6) - 3);
     c.restore();
-    c.fillStyle = '#93a0b4'; c.textAlign = 'left'; c.textBaseline = 'top';
-    c.fillText('its spectrum |H(f)| \u2014 narrow in frequency \u21d2 long in time', ml + 6, mt + 2);
   }
 
   els.rmR.innerHTML =
@@ -1232,6 +1229,41 @@ els.d5te.addEventListener('input', () => {
   state5.Te = parseFloat(els.d5te.value);
   els.d5teV.textContent = state5.Te + ' ms';
   throttled5();
+});
+
+/* ---- per-demo reset buttons: revert one card's controls to defaults - */
+
+els.r1reset.addEventListener('click', () => {
+  els.bw1.value = '15'; state1.bw = 15; els.bw1v.textContent = '15 Hz';
+  drawDemo1();
+});
+els.r2reset.addEventListener('click', () => {
+  els.d2fc.value = '68'; els.d2bw.value = '20'; els.d2t.value = '10';
+  state2.fc = 68; state2.bw = 20; state2.T = 10;
+  els.d2fcV.textContent = '68 Hz'; els.d2bwV.textContent = '20 Hz'; els.d2tV.textContent = '10.00 ms';
+  drawDemo2();
+});
+els.r3reset.addEventListener('click', () => {
+  els.d3bw.value = '60'; els.d3tA.value = '2'; els.d3c.value = '1'; els.d3t.value = '13';
+  state3.bw = 60; state3.tA = 2; state3.c = 1; state3.T = 13;
+  els.d3bwV.textContent = '60 Hz'; els.d3tAV.textContent = '2.00 ms';
+  els.d3cV.textContent = '1.0\u03c3t'; els.d3tV.textContent = '13.00 ms';
+  drawDemo3();
+});
+els.r4reset.addEventListener('click', () => {
+  els.d4bw.value = '40'; els.d4sp.value = '1'; els.d4t.value = '13';
+  els.d4tA.value = '1'; els.d4c.value = '1'; els.d4te.value = '60';
+  state4.bw = 40; state4.sp = 1; state4.T = 13; state4.tA = 1; state4.c = 1; state4.Te = 60;
+  els.d4bwV.textContent = '40 Hz'; els.d4tV.textContent = '13.00 ms'; els.d4tAV.textContent = '1.00 ms';
+  els.d4cV.textContent = '1.0\u03c3t'; els.d4teV.textContent = '60 ms';
+  drawBank4();
+});
+els.r5reset.addEventListener('click', () => {
+  els.d5bw.value = '40'; els.d5t.value = '13.75'; els.d5tA.value = '1'; els.d5c.value = '1'; els.d5te.value = '60';
+  state5.bw = 40; state5.T = 13.75; state5.tA = 1; state5.c = 1; state5.Te = 60;
+  els.d5bwV.textContent = '40 Hz'; els.d5tV.textContent = '13.75 ms'; els.d5tAV.textContent = '1.00 ms';
+  els.d5cV.textContent = '1.0\u03c3t'; els.d5teV.textContent = '60 ms';
+  drawBank5();
 });
 
 /* ---- direct manipulation: drag the 1/T line of the effective gate --- */
