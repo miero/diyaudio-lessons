@@ -73,6 +73,8 @@
   .toc{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 4px;font-size:12.5px}
   .toc a{color:var(--accent);text-decoration:none}
   .toc a:hover{text-decoration:underline}
+  a.ext{color:var(--accent);text-decoration:none}
+  a.ext:hover{text-decoration:underline}
   .hlink{margin-left:8px;display:inline-block;vertical-align:middle;color:var(--muted);opacity:.45;
     text-decoration:none;position:relative}
   h2:hover .hlink,.hlink:focus{opacity:1;color:var(--accent)}
@@ -96,6 +98,11 @@
   the gate leaves in each band, reconstruct the “true” decay there from a theoretical assumption, and let a
   <b>dense-enough bank</b> reassemble the whole response. Same style, same synthetic speakers, same honest
   bookkeeping — including where the idea breaks.</p>
+  <p class="sub"><b>Credit:</b> the idea evaluated here was proposed by diyAudio user <b>mabat</b> in the
+  thread <a class="ext" href="https://www.diyaudio.com/community/threads/acoustic-horn-design-the-easy-way-ath4.338806/page-1058#post-8360102">“Acoustic
+  Horn Design — the easy way (ATH4)”, post #8360102</a> — narrow-bandpass filters to expose the gate’s
+  per-band decay, a modeled reconstruction of the true decay, and a dense bank to reassemble the response.
+  This page is a controlled test of that proposal.</p>
   <p class="sub">Everything runs on the identical <b>“Demo 6 speaker”</b> as gating.html (fast mid/treble
   modes plus one slow 68 Hz port-like tail, τ = 11 ms, floor reflection at 14 ms), plus a second, harder
   speaker with <b>two overlapping bass decays</b>. The red 1/T markers on the reconstruction plots are
