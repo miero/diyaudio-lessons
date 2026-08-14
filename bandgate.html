@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extending the gate with a narrow-band filter bank — an alternative to tail fitting, evaluated</title>
+<style>
+  :root{
+    --bg:#0e1116; --panel:#161b22; --panel2:#1b212b; --line:#2a3340;
+    --text:#dde4ee; --muted:#8d99ab; --accent:#4da3ff; --accent2:#ff9f43;
+    --ok:#3ecf8e; --warn:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:1000px;margin:0 auto;padding:28px 18px 80px}
+  h1{font-size:26px;line-height:1.25;margin:0 0 6px}
+  h2{font-size:20px;margin:0 0 8px}
+  h3{font-size:15px;margin:18px 0 6px;color:var(--accent2)}
+  p{margin:8px 0}
+  .sub{color:var(--muted);margin-top:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:22px 0}
+  canvas{display:block;width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+  .h300{height:320px}.h240{height:250px}
+  .controls{display:flex;flex-direction:column;align-items:stretch;gap:8px;margin:12px 0}
+  .controls .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .controls label{color:var(--muted);font-size:13px;min-width:170px}
+  .controls .val{color:var(--text);font-size:13px;font-weight:700}
+  button.padbtn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;
+    padding:6px 12px;font-size:13px;cursor:pointer}
+  button.padbtn.active{background:var(--accent);border-color:var(--accent);color:#08111d;font-weight:600}
+  input[type=range]{width:220px;accent-color:var(--accent);vertical-align:middle}
+  input[type=number]{width:62px;background:var(--panel2);color:var(--text);border:1px solid var(--line);
+    border-radius:6px;padding:3px 6px;font-size:13px}
+  select{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+  .readout{background:#101720;border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13.5px;color:#c9d4e3}
+  .readout b{color:var(--text)}
+  .readout .ok{color:var(--ok)} .readout .warn{color:var(--warn)} .readout .hl{color:var(--accent2)}
+  .claims{margin:0;padding-left:20px}
+  .claims li{margin:9px 0}
+  .note{color:var(--muted);font-size:13.5px}
+  .myth{border:1px solid #4a3236;border-left:3px solid var(--warn);background:#1c1416;
+    border-radius:8px;padding:10px 14px;margin:12px 0;font-size:13.5px}
+  .myth .mhead{color:var(--warn);font-weight:700;font-size:12px;letter-spacing:.4px;text-transform:uppercase}
+  .myth .fix{color:#c9d4e3;margin-top:5px}
+  .myth .fix b{color:var(--ok)}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:10px 0}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--panel2);color:var(--accent)}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:760px){.cols{grid-template-columns:1fr}}
+  .cols h3{margin-top:0}
+  ul.tight li,ol.tight li{margin:6px 0}
+  .pill{display:inline-block;background:#22304222;border:1px solid var(--line);border-radius:20px;
+    padding:1px 10px;font-size:12px;color:var(--accent);margin-left:8px;vertical-align:middle}
+  footer{color:var(--muted);font-size:12.5px;margin-top:40px;border-top:1px solid var(--line);padding-top:14px}
+  code{background:#101720;border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}
+  .qz{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin:10px 0;background:var(--panel2)}
+  .qtext{margin-bottom:8px}
+  .qbtns{display:flex;gap:8px}
+  .qwhy{display:none;margin-top:8px;font-size:13.5px;color:#c9d4e3;border-top:1px dashed var(--line);padding-top:8px}
+  button.qgood{background:#1d4b38;border-color:var(--ok);color:#d2ffe9}
+  button.qbad{background:#4b2326;border-color:var(--warn);color:#ffd7d7}
+  .predict{background:#101720;border:1px dashed var(--accent);border-radius:8px;padding:10px 14px;margin:12px 0}
+  .predict .ptitle{color:var(--accent);font-size:13px;font-weight:600;margin-bottom:8px}
+  .predict .popts{display:flex;gap:8px;flex-wrap:wrap}
+  .predict .pwhy{display:none;margin-top:8px;font-size:13.5px;color:#c9d4e3}
+  .formula{background:#101720;border:1px solid var(--line);border-radius:8px;padding:10px 16px;
+    margin:12px 0;font:16px/1.5 ui-monospace,Consolas,monospace;color:var(--accent2);text-align:center}
+  .dslegend{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0;font-size:12.5px;color:var(--muted)}
+  .dslegend span{display:inline-flex;align-items:center;gap:5px}
+  .swatch{display:inline-block;width:12px;height:12px;border-radius:3px;flex:none}
+  .toc{display:flex;flex-wrap:wrap;gap:4px 12px;margin:10px 0 4px;font-size:12.5px}
+  .toc a{color:var(--accent);text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .hlink{margin-left:8px;display:inline-block;vertical-align:middle;color:var(--muted);opacity:.45;
+    text-decoration:none;position:relative}
+  h2:hover .hlink,.hlink:focus{opacity:1;color:var(--accent)}
+  .hlink svg{width:15px;height:15px;display:block}
+  .hlink.copied::after{content:'link copied';position:absolute;left:50%;top:130%;transform:translateX(-50%);
+    background:#101720;border:1px solid var(--line);color:var(--ok);font-size:11px;padding:2px 8px;
+    border-radius:6px;white-space:nowrap;z-index:5}
+  .card{scroll-margin-top:12px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-link" viewBox="0 0 16 16">
+<path fill="currentColor" d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0z"/>
+</symbol></svg>
+<div class="wrap">
+
+  <h1>Extending the gate with a <span style="color:var(--accent)">narrow-band filter bank</span> — an alternative to tail fitting, evaluated</h1>
+  <p class="sub">Demo 6 of the gating primer extends a too-short gate by fitting the decaying tail, in the
+  time domain, as one damped sinusoid. This page evaluates a different route to the same goal: run the gated
+  measurement through a bank of <b>very narrow bandpass filters</b>, watch the <i>unnatural</i> energy decay
+  the gate leaves in each band, reconstruct the “true” decay there from a theoretical assumption, and let a
+  <b>dense-enough bank</b> reassemble the whole response. Same style, same synthetic speakers, same honest
+  bookkeeping — including where the idea breaks.</p>
+  <p class="sub">Everything runs on the identical <b>“Demo 6 speaker”</b> as gating.html (fast mid/treble
+  modes plus one slow 68 Hz port-like tail, τ = 11 ms, floor reflection at 14 ms), plus a second, harder
+  speaker with <b>two overlapping bass decays</b>. The red 1/T markers on the reconstruction plots are
+  draggable.</p>
+  <nav class="toc">
+    <a href="#idea">The proposal</a>
+    <a href="#demo-1">Demo 1 · filter memory</a>
+    <a href="#demo-2">Demo 2 · the unnatural decay</a>
+    <a href="#demo-3">Demo 3 · reconstruct one band</a>
+    <a href="#demo-4">Demo 4 · the bank</a>
+    <a href="#demo-5">Demo 5 · two tails</a>
+    <a href="#verdict">Verdict</a>
+    <a href="#quiz">Quiz</a>
+  </nav>
+
+  <!-- ================= THE PROPOSAL ================= -->
+  <div class="card" id="idea">
+    <h2>The proposal under test<a class="hlink" href="#idea" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>The idea, stated precisely:</p>
+    <ol class="claims">
+      <li><b>Look at the gated measurement through very narrow bandpass filters.</b> In each band the gate
+        leaves a visibly <i>unnatural</i> energy-decay curve: it follows the speaker for a while, then bends
+        away when the data runs out.</li>
+      <li><b>Reconstruct the “true” decay in each band</b> using a theoretical assumption about how a band
+        should decay — here: one resonance per band, i.e. an exponentially decaying sinusoid.</li>
+      <li><b>A dense-enough bank of such bands could reconstruct the whole response</b> — extending the gate
+        in software, band by band, exactly where the gate was too short.</li>
+    </ol>
+    <p>The page answers four questions, one demo each:</p>
+    <ol class="claims">
+      <li><b>Q1</b> — What does gating actually do <i>inside one narrow band</i>? <span class="pill">Demo 2</span></li>
+      <li><b>Q2</b> — Can the true decay of a band be reconstructed from its uncontaminated part? <span class="pill">Demo 3</span></li>
+      <li><b>Q3</b> — Does a dense bank reconstruct the whole response? <span class="pill">Demo 4</span></li>
+      <li><b>Q4</b> — Does the bank beat Demo 6’s single global tail fit — and what does it cost? <span class="pill">Demo 4 &amp; 5</span></li>
+    </ol>
+    <p class="note">All signals are synthetic impulse responses at fs = 48 kHz, spectra by direct DTFT
+    (≡ zero-padded FFT). The filters are zero-phase Gaussian bandpasses of bandwidth σ<sub>f</sub>; the bank
+    is analyzed with exact perfect-reconstruction normalization (overlap-sum division), so the sum of all
+    bands is <i>exactly</i> the gated data.</p>
+  </div>
+
+  <!-- ================= DEMO 1 ================= -->
+  <div class="card" id="demo-1">
+    <h2>Demo 1 — A narrow bandpass is long in time: the filter’s memory<a class="hlink" href="#demo-1" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>Before touching the measurement, look at the tool. A bandpass of bandwidth σ<sub>f</sub> has an
+    impulse response that <i>rings</i> — a carrier at the center frequency under a slow envelope — with
+    e-folding time</p>
+    <div class="formula">σ<sub>t</sub> = 1 / (2π·σ<sub>f</sub>)</div>
+    <p>That σ<sub>t</sub> is the filter’s <b>memory</b>: its output at time t mixes ≈ 2–3·σ<sub>t</sub> of
+    data from <i>both sides</i> of t. This is the same uncertainty-principle seesaw as the gate itself —
+    narrow in frequency means long in time — and it will set every limit in the demos below:</p>
+    <div class="controls">
+      <div class="ctl"><label for="bw1">Bandwidth σ<sub>f</sub></label>
+        <input type="range" id="bw1" min="5" max="80" step="1" value="15"><b class="val" id="bw1v">15 Hz</b></div>
+    </div>
+    <canvas id="cmT" class="h240"></canvas>
+    <canvas id="cmS" class="h240" style="margin-top:10px"></canvas>
+    <div class="readout" id="rmR"></div>
+    <p class="note">Top: the filter’s own impulse response (a 68 Hz carrier under a Gaussian envelope;
+    shaded ±2σ<sub>t</sub>). Bottom: its spectrum. Squeeze one and the other stretches — try it. A 10 Hz
+    bandpass “remembers” for ±16 ms: longer than the entire 13 ms gate this page has to work with.</p>
+  </div>
+
+  <!-- ================= DEMO 2 ================= -->
+  <div class="card" id="demo-2">
+    <h2>Demo 2 — Q1: the unnatural decay the gate leaves in a band<a class="hlink" href="#demo-2" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>Now filter the gated room measurement (same IR as gating.html’s Demo 6: slow 68 Hz tail, reflection
+    at 14 ms, gate closed before it) with <b>one</b> bandpass and plot the band’s energy envelope. White
+    dashed is the envelope of the same band applied to the <i>true</i> (reflection-free) response — what the
+    band would show without any gate at all:</p>
+    <div class="controls">
+      <div class="ctl"><label for="d2fc">Band center f<sub>c</sub></label>
+        <input type="range" id="d2fc" min="40" max="160" step="2" value="68"><b class="val" id="d2fcV">68 Hz</b></div>
+      <div class="ctl"><label for="d2bw">Bandwidth σ<sub>f</sub></label>
+        <input type="range" id="d2bw" min="5" max="60" step="1" value="20"><b class="val" id="d2bwV">20 Hz</b></div>
+      <div class="ctl"><label for="d2t">Gate length T</label>
+        <input type="range" id="d2t" min="4" max="13.75" step="0.25" value="10"><b class="val" id="d2tV">10.00 ms</b></div>
+    </div>
+    <div class="predict">
+      <div class="ptitle">Predict before sliding the bandwidth: you make the band twice as narrow. What happens to the decay you observe?</div>
+      <div class="popts" id="p2b"></div>
+      <div class="pwhy" id="p2bwhy"></div>
+    </div>
+    <canvas id="c2env" class="h240"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#4da3ff"></span> band envelope of the gated measurement</span>
+      <span><span class="swatch" style="background:#e8edf4"></span> band envelope of the true response (dashed)</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> contamination start ≈ T − 2.5σ<sub>t</sub></span>
+      <span><span class="swatch" style="background:#ff9f43"></span> gate end</span>
+    </div>
+    <div class="readout" id="r2env"></div>
+    <p class="note"><b>The answer to Q1, made visible:</b> the two envelopes coincide while the filter still
+    has real data on both sides of “now”, then the gated one bends off — first gently, then onto the
+    filter’s own ring-out. Past ≈ T − 2.5σ<sub>t</sub> the band is reporting the <i>filter</i>, not the
+    speaker. Narrowing the band (more frequency detail) stretches σ<sub>t</sub> and moves that bend
+    <i>earlier</i> — the “very narrow” part of the proposal is exactly the part that fights the gate.</p>
+  </div>
+
+  <!-- ================= DEMO 3 ================= -->
+  <div class="card" id="demo-3">
+    <h2>Demo 3 — Q2: reconstruct the true decay of one band<a class="hlink" href="#demo-3" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>The reconstruction assumption, stated explicitly: <b>inside this band the loudspeaker contributes one
+    resonance</b> — a one-sided damped sinusoid starting at the impulse,
+    <code>u(t)·e<sup>−t/τ</sup>(A·cos 2πft + B·sin 2πft)</code> — so the band signal must be the
+    <b>bandpass applied to exactly that</b> (rise from the onset included). The fitter sweeps frequency near
+    the band center and decay time together, least-squares, against the uncontaminated window
+    <b>[t<sub>A</sub>, T − c·σ<sub>t</sub>]</b> — then the fitted decay is simply extrapolated past the gate:</p>
+    <div class="controls">
+      <div class="ctl"><label for="d3bw">Bandwidth σ<sub>f</sub></label>
+        <input type="range" id="d3bw" min="15" max="80" step="1" value="60"><b class="val" id="d3bwV">60 Hz</b></div>
+      <div class="ctl"><label for="d3tA">Fit window start t<sub>A</sub></label>
+        <input type="range" id="d3tA" min="0.5" max="6" step="0.25" value="2"><b class="val" id="d3tAV">2.00 ms</b></div>
+      <div class="ctl"><label for="d3c">Contamination margin c</label>
+        <input type="range" id="d3c" min="0.5" max="3" step="0.1" value="1"><b class="val" id="d3cV">1.0σt</b></div>
+      <div class="ctl"><label for="d3t">Gate length T</label>
+        <input type="range" id="d3t" min="4" max="13.75" step="0.25" value="13"><b class="val" id="d3tV">13.00 ms</b></div>
+    </div>
+    <canvas id="c3env" class="h240"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#4da3ff"></span> band envelope of the gated measurement</span>
+      <span><span class="swatch" style="background:#e8edf4"></span> true band envelope (dashed)</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> fitted decay, extrapolated (dashed)</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> fit end = T − c·σ<sub>t</sub></span>
+    </div>
+    <div class="readout" id="r3fit"></div>
+    <p class="note"><b>The answer to Q2 is “yes — with a catch”:</b> when the filter’s memory fits inside the
+    gate, the true per-band decay is recovered from a few milliseconds of clean data, and the extrapolated
+    envelope runs straight onto the white truth. The catch is arithmetic: the fit window is
+    T − c·σ<sub>t</sub> − t<sub>A</sub> long, and it must hold enough of the decay to measure. Narrow the
+    band and the window empties (the filter eats the gate); shrink c and the last samples of the window are
+    already bent by the missing tail, biasing τ. Either way the seesaw collects its fee.</p>
+    <p class="note">Note also that the fit is a <i>model</i> fit, not a peak-pick: the band’s content at
+    68 Hz is too short-windowed for spectra to show a clean peak — the assumption “one damped sinusoid per
+    band” is doing the work, exactly as it does in Demo 6.</p>
+  </div>
+
+  <!-- ================= DEMO 4 ================= -->
+  <div class="card" id="demo-4">
+    <h2>Demo 4 — Q3: a dense bank reconstructs the whole response<a class="hlink" href="#demo-4" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>One band is an analysis tool; a <b>bank</b> is a reconstruction method. Bands from 30–300 Hz (where
+    the tail lives — above it everything decays inside the gate anyway) are analyzed with
+    perfect-reconstruction normalization, so they add back up to <i>exactly</i> the gated data. Each
+    non-silent band is fitted as in Demo 3; past the contamination start, the gated samples are replaced by
+    the sum of the fitted per-band tails, out to the <b>effective gate</b> — then the spectrum is computed.
+    For comparison, the orange curve is gating.html’s Demo 6 method: one global pole fit on the visible tail
+    (window 3 ms → gate end).</p>
+    <div class="controls">
+      <div class="ctl"><label for="d4bw">Bandwidth σ<sub>f</sub></label>
+        <input type="range" id="d4bw" min="15" max="80" step="1" value="40"><b class="val" id="d4bwV">40 Hz</b></div>
+      <div class="ctl"><label for="d4sp">Bank spacing Δf</label>
+        <select id="d4sp"><option value="0.5">dense (σf/2)</option><option value="1" selected>critical (σf)</option><option value="2">sparse (2σf)</option></select></div>
+      <div class="ctl"><label for="d4t">Gate length T</label>
+        <input type="range" id="d4t" min="4" max="13.75" step="0.25" value="13"><b class="val" id="d4tV">13.00 ms</b></div>
+      <div class="ctl"><label for="d4tA">Fit windows start t<sub>A</sub></label>
+        <input type="range" id="d4tA" min="0.5" max="6" step="0.25" value="1"><b class="val" id="d4tAV">1.00 ms</b></div>
+      <div class="ctl"><label for="d4c">Contamination margin c</label>
+        <input type="range" id="d4c" min="0.5" max="3" step="0.1" value="1"><b class="val" id="d4cV">1.0σt</b></div>
+      <div class="ctl"><label for="d4te">Effective gate T<sub>eff</sub></label>
+        <input type="range" id="d4te" min="15" max="120" step="1" value="60"><b class="val" id="d4teV">60 ms</b></div>
+    </div>
+    <canvas id="c4fr" class="h300"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#8a95a6"></span> real data only (gated at T)</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> Demo-6-style global tail fit</span>
+      <span><span class="swatch" style="background:#e8edf4"></span> true response (dashed)</span>
+      <span><span class="swatch" style="background:#4da3ff"></span> bank reconstruction</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T<sub>eff</sub> (draggable)</span>
+    </div>
+    <div class="readout" id="r4bank"></div>
+    <p class="note"><b>The answer to Q3 is yes</b> — for this speaker. The grey curve shows the classic
+    damage: the 68 Hz port bump smeared beyond recognition by the ≈ 1/T = 77 Hz kernel. The blue curve is
+    built from per-band exponential decays, each fitted from ≈ 8 ms of clean data, and converges onto the
+    dashed truth as the effective gate grows. Try <b>sparse spacing</b>: the overlap sum is no longer flat,
+    so the bands stop adding back up to the signal exactly. This speaker gets away with it — its tail has
+    only one frequency, so the gaps fall where nothing is decaying — but whenever there is still decaying
+    energy between the band centers, sparse spacing leaves un-modeled gaps and phantom peaks. “Dense enough”
+    is not optional; critical spacing (Δf = σ<sub>f</sub>) is already enough for exact reconstruction.</p>
+    <p class="note"><b>Q4, first half:</b> when the tail genuinely is one decay, the bank is a lot of
+    machinery for what a careful global fit does more simply — compare the orange and blue errors in the
+    readout. Its case must be the situation the global fit cannot handle at all: <i>more than one</i> decay
+    in the tail. That is Demo 5.</p>
+  </div>
+
+  <!-- ================= DEMO 5 ================= -->
+  <div class="card" id="demo-5">
+    <h2>Demo 5 — Q4: two overlapping bass decays — where the bank is supposed to shine<a class="hlink" href="#demo-5" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>A harder speaker: the same mid/treble front end, but now <b>two</b> overlapping slow bass decays —
+    60 Hz (τ = 11 ms, the “port”) and 130 Hz (τ = 5 ms, a box/board resonance), 70 Hz apart. The
+    time-domain tail of this speaker is <i>not</i> one damped sinusoid: Demo 6’s single global fit has
+    nothing correct to converge to. Surely the bank — fitting each band on its own — separates them?</p>
+    <div class="controls">
+      <div class="ctl"><label for="d5bw">Bandwidth σ<sub>f</sub></label>
+        <input type="range" id="d5bw" min="15" max="80" step="1" value="40"><b class="val" id="d5bwV">40 Hz</b></div>
+      <div class="ctl"><label for="d5t">Gate length T</label>
+        <input type="range" id="d5t" min="4" max="13.75" step="0.25" value="13.75"><b class="val" id="d5tV">13.75 ms</b></div>
+      <div class="ctl"><label for="d5tA">Fit windows start t<sub>A</sub></label>
+        <input type="range" id="d5tA" min="0.5" max="6" step="0.25" value="1"><b class="val" id="d5tAV">1.00 ms</b></div>
+      <div class="ctl"><label for="d5c">Contamination margin c</label>
+        <input type="range" id="d5c" min="0.5" max="3" step="0.1" value="1"><b class="val" id="d5cV">1.0σt</b></div>
+      <div class="ctl"><label for="d5te">Effective gate T<sub>eff</sub></label>
+        <input type="range" id="d5te" min="15" max="120" step="1" value="60"><b class="val" id="d5teV">60 ms</b></div>
+    </div>
+    <canvas id="c5fr" class="h300"></canvas>
+    <div class="dslegend">
+      <span><span class="swatch" style="background:#8a95a6"></span> real data only (gated at T)</span>
+      <span><span class="swatch" style="background:#ff9f43"></span> Demo-6-style global tail fit</span>
+      <span><span class="swatch" style="background:#e8edf4"></span> true response (dashed)</span>
+      <span><span class="swatch" style="background:#4da3ff"></span> bank reconstruction</span>
+      <span><span class="swatch" style="background:#e05c5c"></span> 1/T<sub>eff</sub> (draggable)</span>
+    </div>
+    <div class="readout" id="r5bank"></div>
+    <p class="note"><b>The honest answer to Q4.</b> Separating two decays needs bands narrower than about
+    half their spacing — here σ<sub>f</sub> ≲ 35 Hz — while fitting cleanly inside the gate needs the filter
+    memory to fit in the fit window — here σ<sub>f</sub> ≳ 40 Hz. <b>The two requirements contradict
+    each other</b>: with a 13.75 ms gate, 70 Hz of separation is right at the edge of what the seesaw
+    allows, and the bank’s low bands end up fitting mixtures. Narrow the band to separate the modes and the
+    fit windows empty; widen it to make the windows work and each band contains both modes. Slide
+    σ<sub>f</sub> and watch the trade bite from both sides.</p>
+    <p class="note">Note what this means: the failure is not the fitter’s — it is the same statement as
+    gating.html’s Demo 4, in filter-bank clothes. Below ≈ 1/T of the longest clean gate, the data does not
+    determine the answer; a bank reorganizes the assumption, it does not add data. For bass like this,
+    ground-plane or nearfield measurement remains the honest route.</p>
+  </div>
+
+  <!-- ================= VERDICT ================= -->
+  <div class="card" id="verdict">
+    <h2>Verdict — what the filter-bank extension is, and what it costs<a class="hlink" href="#verdict" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <table>
+      <tr><th>Question</th><th>Finding</th></tr>
+      <tr><td><b>Q1</b> — what does gating do inside one narrow band?</td>
+        <td>The band envelope follows the true decay only while the filter has data on both sides of “now”;
+        from ≈ T − c·σ<sub>t</sub> onward it bends onto the filter’s own ring-out. The “unnatural decay” is
+        real and sharply localized in time. <b>(Demo 2)</b></td></tr>
+      <tr><td><b>Q2</b> — can the true band decay be reconstructed?</td>
+        <td>Yes, by fitting <i>the bandpass applied to a one-sided damped sinusoid</i> (not a bare damped
+        sinusoid — the filter shapes the band signal) on the uncontaminated window. Works when
+        σ<sub>t</sub> = 1/(2πσ<sub>f</sub>) fits inside the gate with window to spare; both “too narrow”
+        (window empties) and “too greedy” (margin too small → biased τ) fail. <b>(Demo 3)</b></td></tr>
+      <tr><td><b>Q3</b> — does a dense bank reconstruct the whole response?</td>
+        <td>Yes. A critically spaced (Δf = σ<sub>f</sub>) Gaussian bank is a perfect-reconstruction
+        decomposition; splicing each fitted tail extends the whole low-frequency range — 1.1 dB error at
+        68 Hz vs 3.2 dB for the raw gate on this page’s speaker. Sparse spacing breaks the sum. <b>(Demo 4)</b></td></tr>
+      <tr><td><b>Q4</b> — does it beat a single global tail fit?</td>
+        <td>Not where they overlap: when the tail is one decay, a careful global fit is simpler and at least
+        as accurate. The bank’s unique promise — separating <i>overlapping</i> decays — collapses under the
+        seesaw whenever their spacing is below ≈ 2·σ<sub>f,min</sub>, the narrowest bandwidth the gate can
+        afford. <b>(Demo 4 &amp; 5)</b></td></tr>
+    </table>
+    <div class="cols">
+      <div>
+        <h3>Strengths</h3>
+        <ul class="tight">
+          <li><b>Localized assumption.</b> Each band needs only “one decay here”, not “the whole tail is one
+            decay” — the right architecture for tails that change character with frequency.</li>
+          <li><b>Exact bookkeeping.</b> Perfect-reconstruction analysis: with the model switched off you get
+            exactly the gated data back; the extension is auditable band by band (fits, R², skip counts).</li>
+          <li><b>No fit-window art for the direct sound.</b> Bands reject out-of-band content, so fit
+            windows can start earlier than a global fit’s can.</li>
+          <li><b>Degrades gracefully per band</b> — silent bands are skipped, weak fits (R² &lt; 0.95) are
+            refused rather than synthesized.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Weaknesses</h3>
+        <ul class="tight">
+          <li><b>The seesaw, twice.</b> Narrow band ⇒ long memory ⇒ less uncontaminated window; and a short
+            window cannot identify slow decays. “Very narrow” filters are precisely the ones that don’t fit
+            in a gated record.</li>
+          <li><b>Model error replaces truncation error.</b> Below ≈ 1/T nothing is measured — the bank swaps
+            a known smoothing for an assumption, with the same epistemic status as Demo 6’s tail.</li>
+          <li><b>Overlapping decays within one bandwidth are not separable</b> — the fit confidently absorbs
+            the mixture into wrong parameters (high R², wrong τ), injecting plausible-looking wrong bass.</li>
+          <li><b>More machinery</b> — a bank, a per-band nonlinear fit, a phantom guard — for cases a global
+            fit often covers.</li>
+        </ul>
+      </div>
+    </div>
+    <p><b>What this method actually is:</b> frequency-dependent gating — a Gabor/STFT-style decomposition —
+    combined with per-band modal extrapolation. It is the “advanced” route gating.html points at, made
+    concrete: it redistributes the 1/T trade across frequency instead of applying one global gate, and it
+    moves the model assumption from global (one tail) to local (one decay per band). It does <b>not</b>
+    break the time–frequency limit: every dB of recovered bass is paid for by an assumption about how that
+    bass decays, and the assumptions available per band are exactly as strong as the gate lets them be.</p>
+    <div class="myth"><div class="mhead">✗ Myth — “narrow filters beat the gate’s resolution limit”</div>
+      <div class="fix">The filters add no data — they re-localize what the gate already passed. Any detail
+      finer than ≈ 1/T in the reconstruction comes from the <b>decay model</b>, not from the bandwidth.
+      Where the model is right (one clean decay per band) the bank recovers it; where it isn’t, the bank
+      manufactures confident error. The resolution floor is still set by the gate.</div></div>
+  </div>
+
+  <!-- ================= QUIZ ================= -->
+  <div class="card" id="quiz">
+    <h2>Check your understanding<a class="hlink" href="#quiz" aria-label="copy link to this chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+    <p>Five claims — commit to true or false <i>before</i> reading the feedback. <b id="qzscore" class="hl" style="color:var(--accent)"></b></p>
+    <div id="quizbox"></div>
+    <div class="controls"><button id="qzreset" class="padbtn">Reset quiz</button></div>
+  </div>
+
+  <footer>Synthetic educational demo — companion to gating.html’s Demo 6. Signals: sums of damped sinusoids
+  (one-tail speaker identical to gating.html; two-tail variant adds a 130 Hz / 5 ms decay); Gaussian
+  bandpass bank with exact overlap-sum normalization; spectra by direct DTFT at fs = 48 kHz.
+  <a href="#">back to top</a></footer>
+</div>
+<script src="bandgate.js"></script>
+</body>
+</html>
