@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson template — replace with one precise claim</title>
+<style>
+  :root {
+    --bg:#0e1116; --panel:#161b22; --panel2:#1b212b; --line:#2a3340;
+    --text:#dde4ee; --muted:#8d99ab; --accent:#4da3ff; --accent2:#ff9f43;
+    --ok:#3ecf8e; --warn:#ff6b6b;
+  }
+  * { box-sizing:border-box }
+  html { scroll-behavior:smooth }
+  body { margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif }
+  .wrap { max-width:1000px; margin:0 auto; padding:28px 18px 80px }
+  h1 { margin:0 0 6px; font-size:clamp(24px,4vw,30px); line-height:1.25 }
+  h2 { margin:0 0 8px; font-size:20px }
+  h3 { margin:18px 0 6px; color:var(--accent2); font-size:15px }
+  p { margin:8px 0 }
+  a { color:var(--accent) }
+  button,input { font:inherit }
+  button:focus-visible,input:focus-visible,a:focus-visible { outline:2px solid var(--accent); outline-offset:2px }
+  .sub,.note { color:var(--muted) }
+  .note { font-size:13.5px }
+  .eyebrow { margin:0 0 5px; color:var(--accent2); font-size:12px; font-weight:700;
+    letter-spacing:.08em; text-transform:uppercase }
+  .card { margin:22px 0; padding:18px 20px; scroll-margin-top:12px;
+    border:1px solid var(--line); border-radius:12px; background:var(--panel) }
+  .author-note { margin:12px 0; padding:10px 14px; border:1px dashed var(--accent2);
+    border-radius:8px; background:#201a12; color:#e6d7c4; font-size:13.5px }
+  .toc { display:flex; flex-wrap:wrap; gap:4px 14px; margin:12px 0 4px; font-size:12.5px }
+  .toc a { text-decoration:none }
+  .toc a:hover { text-decoration:underline }
+  .claims { margin:8px 0; padding-left:22px }
+  .claims li { margin:8px 0 }
+  .formula { margin:12px 0; padding:10px 16px; border:1px solid var(--line);
+    border-radius:8px; background:#101720; color:var(--accent2); text-align:center;
+    font:16px/1.5 ui-monospace,Consolas,monospace }
+  .controls { display:flex; flex-direction:column; gap:8px; margin:14px 0 }
+  .ctl { display:flex; align-items:center; gap:10px; flex-wrap:wrap }
+  .ctl label { min-width:170px; color:var(--muted); font-size:13px }
+  input[type=range] { width:min(260px,100%); accent-color:var(--accent) }
+  output { min-width:68px; font-size:13px; font-weight:700 }
+  .padbtn { padding:6px 12px; border:1px solid var(--line); border-radius:8px;
+    background:var(--panel2); color:var(--text); cursor:pointer }
+  .padbtn:hover { border-color:var(--accent) }
+  .padbtn.qgood { border-color:var(--ok); background:#1d4b38; color:#d2ffe9 }
+  .padbtn.qbad { border-color:var(--warn); background:#4b2326; color:#ffd7d7 }
+  .plotbox { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:var(--panel2) }
+  .plottitle { padding:7px 12px 3px; color:#93a0b4; font-size:12px }
+  canvas { display:block; width:100%; height:300px; background:transparent }
+  .legend { display:flex; flex-wrap:wrap; gap:14px; margin:8px 0; color:var(--muted); font-size:12.5px }
+  .legend span { display:inline-flex; align-items:center; gap:5px }
+  .swatch { display:inline-block; width:12px; height:12px; border-radius:3px }
+  .readout { margin-top:12px; padding:10px 14px; border:1px solid var(--line);
+    border-left:3px solid var(--accent); border-radius:8px; background:#101720;
+    color:#c9d4e3; font-size:13.5px }
+  .readout b { color:var(--text) }
+  .predict { margin:12px 0; padding:10px 14px; border:1px dashed var(--accent);
+    border-radius:8px; background:#101720 }
+  .ptitle { margin-bottom:8px; color:var(--accent); font-size:13px; font-weight:600 }
+  .button-row { display:flex; flex-wrap:wrap; gap:8px }
+  .feedback { display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--line);
+    color:#c9d4e3; font-size:13.5px }
+  .qz { margin:10px 0; padding:12px 14px; border:1px solid var(--line);
+    border-radius:8px; background:var(--panel2) }
+  .qtext { margin-bottom:8px }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:18px }
+  .checklist li { margin:6px 0 }
+  .hlink { display:inline-block; margin-left:8px; color:var(--muted); opacity:.45;
+    text-decoration:none; vertical-align:middle; position:relative }
+  h2:hover .hlink,.hlink:focus { color:var(--accent); opacity:1 }
+  .hlink svg { display:block; width:15px; height:15px }
+  .hlink.copied::after { content:"link copied"; position:absolute; top:130%; left:50%;
+    z-index:2; padding:2px 8px; transform:translateX(-50%); border:1px solid var(--line);
+    border-radius:6px; background:#101720; color:var(--ok); font-size:11px; white-space:nowrap }
+  footer { margin-top:40px; padding-top:14px; border-top:1px solid var(--line);
+    color:var(--muted); font-size:12.5px }
+  @media (max-width:760px) {
+    .cols { grid-template-columns:1fr }
+    .ctl { align-items:flex-start; flex-direction:column; gap:4px }
+    .ctl label { min-width:0 }
+  }
+  @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-link" viewBox="0 0 16 16">
+    <path fill="currentColor" d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0z"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <!-- TEMPLATE: replace all author notes and example first-order-filter content. -->
+  <header>
+    <p class="eyebrow">Lesson template · remove this label before publishing</p>
+    <h1>[Lesson title] — state <span style="color:var(--accent)">one useful idea</span> precisely</h1>
+    <p class="sub">Open with the learner's problem, connect it to any prerequisite lesson, and preview the
+      evidence this page will use. Keep the central claim narrow enough that the interactive demo can test it.</p>
+    <nav class="toc" aria-label="Lesson chapters">
+      <a href="#idea">The idea</a>
+      <a href="#demo-1">Demo 1</a>
+      <a href="#takeaways">Takeaways</a>
+      <a href="#quiz">Quiz</a>
+      <a href="#author-checklist">Author checklist</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="card" id="idea">
+      <h2>The idea under test<a class="hlink" href="#idea" aria-label="Copy link to the idea chapter"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <div class="author-note"><b>Author TODO:</b> replace this note with a concise setup. Separate what is
+        measured, what is calculated, and what is assumed. Link the source of any disputed claim.</div>
+      <p>Write the proposal in steps a learner can verify:</p>
+      <ol class="claims">
+        <li><b>Observation.</b> What can the learner see or measure directly?</li>
+        <li><b>Model.</b> What equation or simplification connects the controls to the result?</li>
+        <li><b>Boundary.</b> Under what condition does the model stop being trustworthy?</li>
+      </ol>
+      <div class="formula">output = model(input, assumptions)</div>
+      <p class="note">The working example below is a first-order low-pass magnitude response. It exists only
+        to make the template executable; replace the prose, controls, model, plot, predictions, and tests as one unit.</p>
+    </section>
+
+    <section class="card" id="demo-1">
+      <h2>Demo 1 — Turn the claim into a prediction<a class="hlink" href="#demo-1" aria-label="Copy link to Demo 1"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <p>Give the learner a reason to move the control. Name what remains fixed, what changes, and what pattern
+        would support or contradict the claim. This placeholder plots a first-order low-pass filter while a
+        fixed 1 kHz probe makes the result numerically checkable.</p>
+
+      <div class="controls">
+        <div class="ctl">
+          <label for="demoParameter">Example cutoff frequency</label>
+          <input type="range" id="demoParameter" min="50" max="4000" step="10" value="500">
+          <output id="demoParameterValue" for="demoParameter">500 Hz</output>
+        </div>
+        <div class="ctl"><button type="button" class="padbtn" id="demoReset">Reset defaults</button></div>
+      </div>
+
+      <div class="predict">
+        <div class="ptitle">Predict first: if the cutoff rises while the 1 kHz probe stays fixed, what happens?</div>
+        <div class="button-row" id="predictionOptions" role="group" aria-label="Prediction choices"></div>
+        <div class="feedback" id="predictionWhy" role="status"></div>
+      </div>
+
+      <div class="plotbox">
+        <div class="plottitle">Example response — replace this plot with evidence for the lesson's claim</div>
+        <canvas id="demoCanvas" aria-label="First-order low-pass magnitude response">
+          Your browser does not support canvas. Put an equivalent text result in the readout below.
+        </canvas>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="swatch" style="background:#4da3ff"></i> model response</span>
+        <span><i class="swatch" style="background:#ff9f43"></i> cutoff</span>
+        <span><i class="swatch" style="background:#e8edf4"></i> fixed 1 kHz probe</span>
+      </div>
+      <div class="readout" id="demoReadout" role="status" aria-live="polite"></div>
+      <p class="note"><b>Interpret the plot here.</b> State the observed pattern, explain why it occurs, then
+        ask the learner to try one working case and one failure or boundary case.</p>
+    </section>
+
+    <section class="card" id="takeaways">
+      <h2>Takeaways and limits<a class="hlink" href="#takeaways" aria-label="Copy link to takeaways"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <div class="cols">
+        <div>
+          <h3>What the demo establishes</h3>
+          <ul class="checklist">
+            <li>Restate the answer to the opening question.</li>
+            <li>Tie the visual change to the governing equation.</li>
+            <li>Give one practical consequence.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>What it does not establish</h3>
+          <ul class="checklist">
+            <li>Name assumptions and synthetic data explicitly.</li>
+            <li>Show at least one failure mode instead of hiding it.</li>
+            <li>Recommend a real measurement when the model is underdetermined.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="quiz">
+      <h2>Check your understanding<a class="hlink" href="#quiz" aria-label="Copy link to quiz"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <p>Use questions that distinguish the mechanism from a plausible misconception.
+        <b id="quizScore" style="color:var(--accent)" aria-live="polite"></b></p>
+      <div id="quizBox"></div>
+      <div class="controls"><button type="button" id="quizReset" class="padbtn">Reset quiz</button></div>
+    </section>
+
+    <aside class="card" id="author-checklist">
+      <h2>Author checklist<a class="hlink" href="#author-checklist" aria-label="Copy link to author checklist"><svg aria-hidden="true"><use href="#i-link"/></svg></a></h2>
+      <div class="author-note"><b>Delete this entire card before publishing.</b></div>
+      <ol class="checklist">
+        <li>Rename these files together and update the final <code>&lt;script src&gt;</code> and test import.</li>
+        <li>Replace every template note, placeholder claim, example model, prediction, and quiz item.</li>
+        <li>Keep calculations in pure functions; keep drawing and DOM wiring separate.</li>
+        <li>Make defaults tell the main story, and provide a reset button for every demo card.</li>
+        <li>Pair every plot with a text readout so the result is not color- or canvas-only.</li>
+        <li>Test the headline number, a boundary/fallback case, and at least one interaction.</li>
+        <li>Run <code>node your-lesson.test.js</code> before publishing.</li>
+      </ol>
+    </aside>
+  </main>
+
+  <footer>[Sources, measurement conditions, sample rate, model assumptions, and links to related lessons.] ·
+    <a href="#">Back to top</a></footer>
+</div>
+
+<noscript><p style="color:#ff6b6b;text-align:center">This interactive lesson requires JavaScript.</p></noscript>
+<script src="template.js"></script>
+</body>
+</html>
